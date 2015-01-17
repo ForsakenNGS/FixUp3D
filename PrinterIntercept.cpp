@@ -163,6 +163,12 @@ void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT Arg
 			log->writeString("[GetPreheatTimer] Result: ")->writeLong(result)->writeString("\r\n");
 			break;
 		}
+		case FIXUP3D_CMD_GET_LAYER:
+		{
+			ULONG result = *((PUSHORT)Buffer);	// Time is stored in 2-minute units
+			log->writeString("[GetLayer] Result: ")->writeLong(result)->writeString("\r\n");
+			break;
+		}
 		// Yet unknown simple get commands
 		case FIXUP3D_CMD_GET_UNKOWN00:
 		case FIXUP3D_CMD_GET_UNKOWN01:
@@ -170,7 +176,6 @@ void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT Arg
 		case FIXUP3D_CMD_GET_UNKOWN03:
 		case FIXUP3D_CMD_GET_UNKOWN04:
 		case FIXUP3D_CMD_GET_UNKOWN05:
-		case FIXUP3D_CMD_GET_UNKOWN0A:
 		case FIXUP3D_CMD_GET_UNKOWN0B:
 		case FIXUP3D_CMD_GET_UNKOWN0F:
 		case FIXUP3D_CMD_GET_UNKOWN10:
