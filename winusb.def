@@ -1,0 +1,23 @@
+EXPORTS
+   WinUsb_AbortPipe = WinUsb_Wrapper_AbortPipe @1
+   WinUsb_ControlTransfer = WinUsb_Wrapper_ControlTransfer @2
+   WinUsb_FlushPipe = WinUsb_Wrapper_FlushPipe @3
+   WinUsb_Free = WinUsb_Wrapper_Free @4
+   WinUsb_GetAssociatedInterface = WinUsb_Wrapper_GetAssociatedInterface @5
+   WinUsb_GetCurrentAlternateSetting = WinUsb_Wrapper_GetCurrentAlternateSetting @6
+   WinUsb_GetDescriptor = WinUsb_Wrapper_GetDescriptor @7
+   WinUsb_GetOverlappedResult = WinUsb_Wrapper_GetOverlappedResult @8
+   WinUsb_GetPipePolicy = WinUsb_Wrapper_GetPipePolicy @9
+   WinUsb_GetPowerPolicy = WinUsb_Wrapper_GetPowerPolicy @10
+   WinUsb_Initialize = WinUsb_Wrapper_Initialize @11
+   WinUsb_ParseConfigurationDescriptor = WinUsb_Wrapper_ParseConfigurationDescriptor @12
+   WinUsb_ParseDescriptors   = WinUsb_Wrapper_ParseDescriptors @13
+   WinUsb_QueryDeviceInformation = WinUsb_Wrapper_QueryDeviceInformation @14
+   WinUsb_QueryInterfaceSettings = WinUsb_Wrapper_QueryInterfaceSettings @15
+   WinUsb_QueryPipe = WinUsb_Wrapper_QueryPipe @16
+   WinUsb_ReadPipe = WinUsb_Wrapper_ReadPipe @17
+   WinUsb_ResetPipe = WinUsb_Wrapper_ResetPipe @18
+   WinUsb_SetCurrentAlternateSetting = WinUsb_Wrapper_SetCurrentAlternateSetting @19
+   WinUsb_SetPipePolicy = WinUsb_Wrapper_SetPipePolicy @20
+   WinUsb_SetPowerPolicy = WinUsb_Wrapper_SetPowerPolicy @21
+   WinUsb_WritePipe = WinUsb_Wrapper_WritePipe @22

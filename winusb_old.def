@@ -1,0 +1,45 @@
+EXPORTS
+    _Z24WinUsb_Wrapper_AbortPipePvh @1
+    _Z30WinUsb_Wrapper_ControlTransferPv20_WINUSB_SETUP_PACKETPhmPmP11_OVERLAPPED @2
+    _Z24WinUsb_Wrapper_FlushPipePvh @3
+    _Z19WinUsb_Wrapper_FreePv @4
+    _Z37WinUsb_Wrapper_GetAssociatedInterfacePvhPS_ @5
+    _Z41WinUsb_Wrapper_GetCurrentAlternateSettingPvPh @6
+    _Z28WinUsb_Wrapper_GetDescriptorPvhhtPhmPm @7
+    _Z34WinUsb_Wrapper_GetOverlappedResultPvP11_OVERLAPPEDPmi @8
+    _Z28WinUsb_Wrapper_GetPipePolicyPvhmPmS_ @9
+    _Z29WinUsb_Wrapper_GetPowerPolicyPvmPmS_ @10
+    _Z25WinUsb_Wrapper_InitializePvPS_ @11
+    _Z43WinUsb_Wrapper_ParseConfigurationDescriptorP29_USB_CONFIGURATION_DESCRIPTORPvlllll @12
+    _Z31WinUsb_Wrapper_ParseDescriptorsPvmS_l @13
+    _Z37WinUsb_Wrapper_QueryDeviceInformationPvmPmS_ @14
+    _Z37WinUsb_Wrapper_QueryInterfaceSettingsPvhP25_USB_INTERFACE_DESCRIPTOR @15
+    _Z24WinUsb_Wrapper_QueryPipePvhhP24_WINUSB_PIPE_INFORMATION @16
+    _Z23WinUsb_Wrapper_ReadPipePvhPhmPmP11_OVERLAPPED @17
+    _Z24WinUsb_Wrapper_ResetPipePvh @18
+    _Z41WinUsb_Wrapper_SetCurrentAlternateSettingPvh @19
+    _Z28WinUsb_Wrapper_SetPipePolicyPvhmmS_ @20
+    _Z29WinUsb_Wrapper_SetPowerPolicyPvmmS_ @21    
+    _Z24WinUsb_Wrapper_WritePipePvhPhmPmP11_OVERLAPPED @22
+    WinUsb_AbortPipe = _Z24WinUsb_Wrapper_AbortPipePvh
+	WinUsb_ControlTransfer = _Z30WinUsb_Wrapper_ControlTransferPv20_WINUSB_SETUP_PACKETPhmPmP11_OVERLAPPED
+	WinUsb_FlushPipe = _Z24WinUsb_Wrapper_FlushPipePvh
+	WinUsb_Free = _Z19WinUsb_Wrapper_FreePv
+	WinUsb_GetAssociatedInterface = _Z37WinUsb_Wrapper_GetAssociatedInterfacePvhPS_
+	WinUsb_GetCurrentAlternateSetting = _Z41WinUsb_Wrapper_GetCurrentAlternateSettingPvPh
+	WinUsb_GetDescriptor = _Z28WinUsb_Wrapper_GetDescriptorPvhhtPhmPm
+	WinUsb_GetOverlappedResult = _Z34WinUsb_Wrapper_GetOverlappedResultPvP11_OVERLAPPEDPmi
+	WinUsb_GetPipePolicy = _Z28WinUsb_Wrapper_GetPipePolicyPvhmPmS_
+	WinUsb_GetPowerPolicy = _Z29WinUsb_Wrapper_GetPowerPolicyPvmPmS_
+	WinUsb_Initialize = _Z25WinUsb_Wrapper_InitializePvPS_
+	WinUsb_ParseConfigurationDescriptor = _Z43WinUsb_Wrapper_ParseConfigurationDescriptorP29_USB_CONFIGURATION_DESCRIPTORPvlllll
+	WinUsb_ParseDescriptors	= _Z31WinUsb_Wrapper_ParseDescriptorsPvmS_l
+	WinUsb_QueryDeviceInformation = _Z37WinUsb_Wrapper_QueryDeviceInformationPvmPmS_
+	WinUsb_QueryInterfaceSettings = _Z37WinUsb_Wrapper_QueryInterfaceSettingsPvhP25_USB_INTERFACE_DESCRIPTOR
+	WinUsb_QueryPipe = _Z24WinUsb_Wrapper_QueryPipePvhhP24_WINUSB_PIPE_INFORMATION
+	WinUsb_ReadPipe = _Z23WinUsb_Wrapper_ReadPipePvhPhmPmP11_OVERLAPPED
+	WinUsb_ResetPipe = _Z24WinUsb_Wrapper_ResetPipePvh
+	WinUsb_SetCurrentAlternateSetting = _Z41WinUsb_Wrapper_SetCurrentAlternateSettingPvh
+	WinUsb_SetPipePolicy = _Z28WinUsb_Wrapper_SetPipePolicyPvhmmS_
+	WinUsb_SetPowerPolicy = _Z29WinUsb_Wrapper_SetPowerPolicyPvmmS_
+	WinUsb_WritePipe = _Z24WinUsb_Wrapper_WritePipePvhPhmPmP11_OVERLAPPED
