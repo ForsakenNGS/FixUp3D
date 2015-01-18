@@ -82,6 +82,9 @@ void PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 }
 
 void PrinterIntercept::handleUsbRead(WINUSB_INTERFACE_HANDLE InterfaceHandle, UCHAR PipeID, PUCHAR Buffer, ULONG LengthTransferred) {
+	if (customCommandsSending) {
+		return;	// Do not handle own commands
+	}
 	handleUpCmdReply(lastWriteCommand, lastWriteArgumentLo, lastWriteArgumentHi, lastWriteArgumentLong, Buffer, LengthTransferred);
 	if (!lastWriteKeep) {
 		lastWriteCustom = (lastWriteArgumentLo<<16)|lastWriteCommand;
