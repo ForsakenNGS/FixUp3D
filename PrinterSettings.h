@@ -9,7 +9,7 @@
 #define PRINTERSETTINGS_H_
 
 #include <Windows.h>
-#include <winusb.h>
+#include "winusbhelper.h"
 
 #define IDC_LABEL_HEATER_TEMP	0x101
 #define IDC_INPUT_HEATER_TEMP	0x201

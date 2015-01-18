@@ -10,6 +10,8 @@
 #include <iostream>
 #include <direct.h>
 #include <Shlobj.h>
+#include <TCHAR.H>
+#include <stdio.h>
 
 namespace Core {
 
@@ -25,14 +27,14 @@ PrinterIntercept* PrinterIntercept::getInstance() {
 PrinterIntercept::PrinterIntercept() {
 	customCommandsSending = false;
 	// Initialize log writer
-	char	sHomeDir[MAX_PATH];
-	char	sFilename[MAX_PATH];
-	if(SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, 0, sHomeDir))) {
-		sprintf(sFilename, "%s\\UpUsbIntercept", sHomeDir);
+	TCHAR sHomeDir[MAX_PATH];
+	TCHAR sFilename[MAX_PATH];
+	if(SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, 0, sHomeDir))) {
+		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept"), sHomeDir);
 		// Ensure directory exists
 		_mkdir(sFilename);
 		// Create log writer
-		sprintf(sFilename, "%s\\UpUsbIntercept\\PrinterIntercept.log", sHomeDir);
+		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\PrinterIntercept.log"), sHomeDir);
 		log = new Core::SimpleLogWriter(sFilename);
 	}
 	// Initialize members

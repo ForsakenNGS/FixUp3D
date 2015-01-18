@@ -10,6 +10,7 @@
 
 #include <windows.h>
 #include <iostream>
+#include <TCHAR.H>
 
 namespace Core {
 
@@ -17,7 +18,7 @@ class SimpleLogWriter {
 private:
 	HANDLE		hFile;
 public:
-	SimpleLogWriter(const char* debugFilename);
+	SimpleLogWriter(const TCHAR* debugFilename);
 	virtual ~SimpleLogWriter();
 
 	SimpleLogWriter*	writeLong(ULONG number);

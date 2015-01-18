@@ -7,6 +7,7 @@
 
 #include "PrinterSettings.h"
 #include "PrinterIntercept.h"
+#include <stdio.h>
 #include <iostream>
 #include <sstream>
 #include <direct.h>
@@ -44,6 +45,7 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hLabelHeaterTemp = NULL;
 	hEditHeaterTemp = NULL;
 	hCheckHeaterTemp = NULL;
+	hButtonSetTemp = NULL;
 }
 
 PrinterSettings::~PrinterSettings() {
@@ -69,7 +71,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			/*
 			char	debug[64];
 			sprintf(debug, "WM_COMMAND: %x (%i / %i), %x (%i / %i)", wParam, HIWORD(wParam), LOWORD(wParam), lParam, HIWORD(lParam), LOWORD(lParam));
-			MessageBox(NULL, debug, "UpUsbIntercept", NULL);
+			MessageBox(NULL, debug, "FixUp3D", NULL);
 			*/
 			if (HIWORD(wParam) == BN_CLICKED) {
 				if (LOWORD(wParam) == IDC_CHECK_HEATER_TEMP) {
@@ -135,7 +137,7 @@ void PrinterSettings::setHeaterTemperature(USHORT newTemp, BOOL override) {
 		settings.heaterTemp = newTemp;
 		if (!override) {
 			CHAR* cHeaterTemp = new CHAR[16];
-			sprintf(cHeaterTemp, "%i", settings.heaterTemp);
+			sprintf(cHeaterTemp, "%lu", settings.heaterTemp);
 			// Update input field
 			SetWindowText(hEditHeaterTemp, cHeaterTemp);
 		}
@@ -152,15 +154,15 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 	char	sHomeDir[MAX_PATH];
 	char	sFilename[MAX_PATH];
 	if(SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, 0, sHomeDir))) {
-		sprintf(sFilename, "%s\\UpUsbIntercept", sHomeDir);
+		sprintf(sFilename, "%s\\FixUp3D", sHomeDir);
 		// Ensure directory exists
 		_mkdir(sFilename);
 		// Open/create config file
-		sprintf(sFilename, "%s\\UpUsbIntercept\\config.cfg", sHomeDir);
+		sprintf(sFilename, "%s\\FixUp3D\\config.cfg", sHomeDir);
 		HANDLE hFile = CreateFile(sFilename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE) {
 			// Config file does not exist
-			MessageBox(NULL, "Failed to read configuration! (Could not open file)", "UpUsbIntercept", NULL);
+			MessageBox(NULL, TEXT("Failed to read configuration (Could not open file)"), TEXT("FixUp3D"), MB_OK);
 			return;
 		}
 		DWORD	dwVersion = 0;
@@ -170,7 +172,7 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 				if (ReadFile(hFile, &settings, sizeof(settings), &dwBytesRead, NULL)) {
 					// Success!
 					CHAR* cHeaterTemp = new CHAR[16];
-					sprintf(cHeaterTemp, "%i", settings.heaterTemp);
+					sprintf(cHeaterTemp, "%lu", settings.heaterTemp);
 					SetWindowTextA(hEditHeaterTemp, cHeaterTemp);
 					CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, (settings.heaterTempOverride ? BST_CHECKED : BST_UNCHECKED));
 				} else {
@@ -192,14 +194,14 @@ void PrinterSettings::writeSettingsToConfig() {
 	char	sHomeDir[MAX_PATH];
 	char	sFilename[MAX_PATH];
 	if(SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, 0, sHomeDir))) {
-		sprintf(sFilename, "%s\\UpUsbIntercept", sHomeDir);
+		sprintf(sFilename, "%s\\FixUp3D", sHomeDir);
 		// Ensure directory exists
 		_mkdir(sFilename);
 		// Open/create config file
-		sprintf(sFilename, "%s\\UpUsbIntercept\\config.cfg", sHomeDir);
+		sprintf(sFilename, "%s\\FixUp3D\\config.cfg", sHomeDir);
 		HANDLE hFile = CreateFile(sFilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE) {
-			MessageBox(NULL, "Failed to write configuration! (Could not create file)", "UpUsbIntercept", NULL);
+			MessageBox(NULL, TEXT("Failed to write configuration (Could not create file)"), TEXT("FixUp3D"), MB_OK);
 			return;
 		}
 		DWORD	dwVersion = PRINTER_SETTING_VERSION;
@@ -208,10 +210,10 @@ void PrinterSettings::writeSettingsToConfig() {
 			if (WriteFile(hFile, &settings, sizeof(settings), &dwBytesWritten, NULL)) {
 				// Success!
 			} else {
-				MessageBox(NULL, "Failed to write configuration!", "UpUsbIntercept", NULL);
+				MessageBox(NULL, TEXT("Failed to write configuration"), TEXT("FixUp3D"), MB_OK);
 			}
 		} else {
-			MessageBox(NULL, "Failed to write configuration!", "UpUsbIntercept", NULL);
+			MessageBox(NULL, TEXT("Failed to write configuration"), TEXT("FixUp3D"), MB_OK);
 		}
 		CloseHandle(hFile);
 	}

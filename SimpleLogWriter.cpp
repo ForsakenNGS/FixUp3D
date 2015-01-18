@@ -7,17 +7,19 @@
 
 #include "SimpleLogWriter.h"
 #include <sstream>
+#include <TCHAR.H>
+#include <stdio.h>
 
 using namespace std;
 
 namespace Core {
 
-SimpleLogWriter::SimpleLogWriter(const char* debugFilename) {
+SimpleLogWriter::SimpleLogWriter(const TCHAR* debugFilename) {
 	hFile = CreateFile(debugFilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
-    	char* debug = new char[256];
-    	sprintf(debug, "Can't create file '%s'.", debugFilename);
-    	MessageBox(NULL, debug, "UpUsbIntercept", NULL);
+    	TCHAR debug[256];
+    	_stprintf(debug, "Can't create file '%s'.", debugFilename);
+    	MessageBox(NULL, debug, TEXT("UpUsbIntercept"), MB_OK);
     }
 }
 
@@ -39,7 +41,7 @@ SimpleLogWriter* SimpleLogWriter::writeLong(ULONG number) {
     DWORD 		dwBytesWritten = 0;
     BOOL bErrorFlag = WriteFile(hFile, sBuffer, dwBufferLen, &dwBytesWritten, NULL);
     if (!bErrorFlag) {
-    	MessageBox(NULL, sBuffer, "UpUsbIntercept: writeLong failed", NULL);
+    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeLong failed", MB_OK);
     }
     return this;
 }
@@ -55,7 +57,7 @@ SimpleLogWriter* SimpleLogWriter::writeFloat(FLOAT number) {
     DWORD 		dwBytesWritten = 0;
     BOOL bErrorFlag = WriteFile(hFile, sBuffer, dwBufferLen, &dwBytesWritten, NULL);
     if (!bErrorFlag) {
-    	MessageBox(NULL, sBuffer, "UpUsbIntercept: writeLong failed", NULL);
+    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeLong failed", MB_OK);
     }
     return this;
 }
@@ -71,8 +73,8 @@ SimpleLogWriter* SimpleLogWriter::writeString(const char* text) {
     BOOL bErrorFlag = WriteFile(hFile, stream.str().c_str(), dwBufferLen, &dwBytesWritten, NULL);
     if (!bErrorFlag) {
     	char* debug = new char[64];
-    	sprintf(debug, "Failed to write '%s' to file. (length: %i)", stream.str().c_str(), dwBufferLen);
-    	MessageBox(NULL, debug, "UpUsbIntercept: writeString failed", NULL);
+    	sprintf(debug, "Failed to write '%s' to file. (length: %lu)", stream.str().c_str(), dwBufferLen);
+    	MessageBoxA(NULL, debug, "UpUsbIntercept: writeString failed", MB_OK);
     }
     return this;
 }
@@ -88,7 +90,7 @@ SimpleLogWriter* SimpleLogWriter::writeBinaryBuffer(PVOID buffer, ULONG bufferLe
 		sprintf(sBuffer, "%02x", *((PUCHAR)buffer + i));
 		bErrorFlag = WriteFile(hFile, sBuffer, 2, &dwBytesWritten, NULL);
 	    if (!bErrorFlag) {
-	    	MessageBox(NULL, sBuffer, "UpUsbIntercept: writeBinaryBuffer failed", NULL);
+	    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeBinaryBuffer failed", MB_OK);
 	    }
 	}
     return this;

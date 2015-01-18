@@ -8,7 +8,7 @@
 #ifndef DEBUG_PRINTERINTERCEPT_H_
 #define DEBUG_PRINTERINTERCEPT_H_
 
-#include <winusb.h>
+#include "winusbhelper.h"
 #include <queue>
 #include "SimpleLogWriter.h"
 
