@@ -121,24 +121,6 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-/*
-void PrinterSettings::applyHeaterTemperature() {
-	UCHAR*	cmdBuffer = new UCHAR[6]{ 0x56, 0x39, 0xd2, 0x00, 0x00, 0x00 };
-	ULONG	cmdBufferLen = 6;
-	ULONG	transferLen = 0;
-	*((PULONG)(cmdBuffer+2)) = settings.heaterTemp;
-	if (!WinUsb_WritePipe(hUsbInterface, 1, cmdBuffer, cmdBufferLen, &transferLen, NULL)) {
-		MessageBox(NULL, "Failed to apply heater temperature! (Write error)", "UpUsbIntercept", NULL);
-	} else {
-		UCHAR*	respBuffer = new UCHAR[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
-		ULONG	respBufferLen = 6;
-		if (!WinUsb_ReadPipe(hUsbInterface, 1, respBuffer, respBufferLen, &transferLen, NULL)) {
-			MessageBox(NULL, "Failed to apply heater temperature! (Read error)", "UpUsbIntercept", NULL);
-		}
-	}
-}
-*/
-
 USHORT PrinterSettings::getHeaterTemperature() {
 	return settings.heaterTemp;
 }

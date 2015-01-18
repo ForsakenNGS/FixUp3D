@@ -59,11 +59,13 @@ void PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 	ULONG	transferLen = 0;
 	// Write command to buffer
 	*((PUSHORT)(cmdBuffer)) = command.command;
-	// Write arguments to buffer
-	memcpy(cmdBuffer + 2, command.arguments, command.argumentsLength);
-	// Free commands argument buffer
-	free(command.arguments);
-	command.arguments = 0;
+	if (command.argumentsLength > 0) {
+		// Write arguments to buffer
+		memcpy(cmdBuffer + 2, command.arguments, command.argumentsLength);
+		// Free commands argument buffer
+		free(command.arguments);
+		command.arguments = 0;
+	}
 	// Write prepared command buffer
 	if (!WinUsb_WritePipe(interfaceHandle, 0x01, cmdBuffer, cmdBufferLen, &transferLen, NULL)) {
 		log->writeString("[CustomCmd] Failed to send custom command! Command: 0x")->writeBinaryBuffer(&command.command, 2)
@@ -159,7 +161,8 @@ void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		{
 			// Write to memory
 			ULONG MemoryOffset = *((PULONG)(buffer+6));
-			log->writeString("[WriteMem] Arg: ")->writeBinaryBuffer(&argLong, 4)->writeString(" Data: ")->writeBinaryBuffer(buffer+10, bufferLength-10)->writeString("\r\n");
+			log->writeString("[WriteMem] Arg: ")->writeBinaryBuffer(&argLong, 4)->writeString(" Offset(?): ")->writeBinaryBuffer(&MemoryOffset, 4)
+					->writeString(" Data: ")->writeBinaryBuffer(buffer+10, bufferLength-10)->writeString("\r\n");
 			if (MemoryOffset == 0x00000039) {
 				struct memSettings39 {
 					ULONG	temperature;
@@ -174,6 +177,23 @@ void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 					memSettings->temperature = TargetTemperature;
 				}
 			}
+			/*
+			 * TODO: Check if this value is related to the heater temperature
+			if (MemoryOffset == 0x0000003B) {
+				struct memSettings3B {
+					ULONG	temperatureTest;
+					ULONG	unknown1;
+					ULONG	unknown2;
+				} *memSettings = ((memSettings3B*)(buffer+10));
+				settings->setHeaterTemperature(memSettings->temperatureTest, false);
+				ULONG TargetTemperature = settings->getHeaterTemperature();
+				if (TargetTemperature != memSettings->temperatureTest) {
+					// Override temperature!
+					log->writeString("[WriteMem] Overriding Temperature Test: ")->writeLong(memSettings->temperatureTest + 170)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
+					memSettings->temperatureTest = TargetTemperature - 170;
+				}
+			}
+			*/
 			break;
 		}
 		default:
@@ -323,13 +343,13 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 }
 
 void PrinterIntercept::setNozzle1Temp(ULONG temperature) {
-	FixUp3DCustomCommand	cmd;
-	cmd.command = FIXUP3D_CMD_SET_NOZZLE1_TEMP;
-	cmd.arguments = malloc(4);
-	memcpy(cmd.arguments, &temperature, 4);
-	cmd.argumentsLength = 4;
-	cmd.responseLength = 1;
-	addCustomCommand(cmd);
+	FixUp3DCustomCommand	cmdSetTemp;
+	cmdSetTemp.command = FIXUP3D_CMD_SET_NOZZLE1_TEMP;
+	cmdSetTemp.arguments = malloc(4);
+	memcpy(cmdSetTemp.arguments, &temperature, 4);
+	cmdSetTemp.argumentsLength = 4;
+	cmdSetTemp.responseLength = 1;
+	addCustomCommand(cmdSetTemp);
 }
 
 } /* namespace Core */
