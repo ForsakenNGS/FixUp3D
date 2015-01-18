@@ -143,6 +143,18 @@ void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 			}
 			break;
 		}
+		case FIXUP3D_CMD_SET_UNKNOWN0A:
+		case FIXUP3D_CMD_SET_UNKNOWN0B:
+		case FIXUP3D_CMD_SET_UNKNOWN10:
+		case FIXUP3D_CMD_SET_UNKNOWN14:
+		case FIXUP3D_CMD_SET_UNKNOWN4C:
+		case FIXUP3D_CMD_SET_UNKNOWN4D:
+		case FIXUP3D_CMD_SET_UNKNOWN8E:
+		case FIXUP3D_CMD_SET_UNKNOWN94:
+		{
+			log->writeString("[SetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Data: ")->writeBinaryBuffer(buffer+2,bufferLength-2)->writeString("\r\n");
+			break;
+		}
 		case FIXUP3D_CMD_WRITE_MEM:
 		{
 			// Write to memory
@@ -245,7 +257,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_UNKOWN21:
 		case FIXUP3D_CMD_GET_UNKOWN32:
 		{
-			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-minute units
+			ULONG result = *((PUSHORT)buffer);
 			log->writeString("[GetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Result: ")->writeLong(result)->writeString("\r\n");
 			break;
 		}
