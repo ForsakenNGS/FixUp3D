@@ -9,6 +9,7 @@
 #define DEBUG_PRINTERINTERCEPT_H_
 
 #include <winusb.h>
+#include <queue>
 #include "SimpleLogWriter.h"
 
 namespace Core {
@@ -48,24 +49,44 @@ namespace Core {
 #define	FIXUP3D_CMD_WRITE_MEM			UPCMD(0x2F,0x01)
 #define FIXUP3D_CMD_NONE				UPCMD(0xFF,0xFF)
 
+struct	FixUp3DCustomCommand {
+	USHORT	command;
+	void*	arguments;
+	ULONG	argumentsLength;
+	ULONG	responseLength;
+};
+
+typedef std::queue<FixUp3DCustomCommand> FixUp3dCmdQueue;
+
 class PrinterIntercept {
 private:
-	SimpleLogWriter*	log = NULL;
+    static PrinterIntercept	*instance;
 
-	USHORT				lastWriteCommand;
-	USHORT				lastWriteArgumentLo;
-	USHORT				lastWriteArgumentHi;
-	ULONG				lastWriteArgumentLong;
-	ULONG				lastWriteCustom;
-	BOOL				lastWriteKeep;
+	FixUp3dCmdQueue			customCommands;
+	BOOL					customCommandsSending;
+
+	SimpleLogWriter*		log = NULL;
+
+	USHORT					lastWriteCommand;
+	USHORT					lastWriteArgumentLo;
+	USHORT					lastWriteArgumentHi;
+	ULONG					lastWriteArgumentLong;
+	ULONG					lastWriteCustom;
+	BOOL					lastWriteKeep;
+
+	void	addCustomCommand(FixUp3DCustomCommand &command);
+	void	sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command);
+	void	handleUpCmdSend(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG bufferLength);
+	void	handleUpCmdReply(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred);
 public:
 	PrinterIntercept();
 	virtual ~PrinterIntercept();
+	static PrinterIntercept* getInstance();
 
-	void	handleUsbRead(WINUSB_INTERFACE_HANDLE InterfaceHandle, UCHAR PipeID, PUCHAR Buffer, ULONG LengthTransferred);
-	void	handleUsbWrite(WINUSB_INTERFACE_HANDLE InterfaceHandle, UCHAR PipeID, PUCHAR Buffer, ULONG BufferLength);
-	void	handleUpCmdSend(USHORT Command, USHORT Arg1, USHORT Arg2, ULONG ArgLong, PUCHAR Buffer, ULONG BufferLength);
-	void	handleUpCmdReply(USHORT Command, USHORT Arg1, USHORT Arg2, ULONG ArgLong, PUCHAR Buffer, ULONG LengthTransferred);
+	void	setNozzle1Temp(ULONG temperature);
+
+	void	handleUsbRead(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG lengthTransferred);
+	void	handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG bufferLength);
 };
 
 } /* namespace Core */

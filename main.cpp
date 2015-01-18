@@ -68,7 +68,7 @@ int initializeSettingsWindow(HINSTANCE hDllHandle) {
 		MessageBox(NULL, "Call to RegisterClassEx failed!", "UpUsbIntercept", NULL);
 		return 1;
 	}
-	HWND hWnd = CreateWindow(szWindowClass, szTitle, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX), CW_USEDEFAULT, CW_USEDEFAULT, 348, 56, NULL, NULL, hDllHandle, NULL);
+	HWND hWnd = CreateWindow(szWindowClass, szTitle, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX), CW_USEDEFAULT, CW_USEDEFAULT, 348, 78, NULL, NULL, hDllHandle, NULL);
 	if (!hWnd) {
 		char	error[64];
 		sprintf(error, "Call to CreateWindow failed! (Error %i)", GetLastError());

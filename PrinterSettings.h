@@ -14,6 +14,7 @@
 #define IDC_LABEL_HEATER_TEMP	0x101
 #define IDC_INPUT_HEATER_TEMP	0x201
 #define IDC_CHECK_HEATER_TEMP	0x301
+#define IDC_BUTTON_SET_TEMP		0x401
 
 #define	PRINTER_SETTING_VERSION	0x0100
 
@@ -38,6 +39,7 @@ private:
 	HWND							hLabelHeaterTemp;
 	HWND							hEditHeaterTemp;
 	HWND							hCheckHeaterTemp;
+	HWND							hButtonSetTemp;
 public:
 	PrinterSettings(HINSTANCE hInstance);
 	virtual ~PrinterSettings();

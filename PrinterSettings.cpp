@@ -6,6 +6,7 @@
  */
 
 #include "PrinterSettings.h"
+#include "PrinterIntercept.h"
 #include <iostream>
 #include <sstream>
 #include <direct.h>
@@ -58,6 +59,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			hLabelHeaterTemp = CreateWindow("Static", "Heater Temp. (°C)", WS_CHILD|WS_VISIBLE, 4, 4, 160, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
 			hEditHeaterTemp = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 4, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP, hInstDll, 0);
 			hCheckHeaterTemp = CreateWindow("Button", "Override", BS_CHECKBOX|WS_CHILD|WS_VISIBLE, 260, 4, 80, 22, hWnd, (HMENU)IDC_CHECK_HEATER_TEMP, hInstDll, 0);
+			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE, 4, 32, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
 			// Read config
 			readSettingsFromConfig(hWnd);
 			break;
@@ -79,6 +81,10 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 						CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, BST_UNCHECKED);
 					}
 					settings.heaterTempOverride = newOverride;
+				}
+				if (LOWORD(wParam) == IDC_BUTTON_SET_TEMP) {
+					// Manual temperature set requested
+					PrinterIntercept::getInstance()->setNozzle1Temp( settings.heaterTemp );
 				}
 			}
 			if (HIWORD(wParam) == EN_CHANGE) {

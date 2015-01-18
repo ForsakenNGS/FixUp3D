@@ -20,7 +20,6 @@ WINUSB_INTERFACE_HANDLE hLatestInterfaceHandle = 0;
 
 Core::SimpleLogWriter*	log = NULL;
 Core::SimpleLogWriter*	logRaw = NULL;
-Core::PrinterIntercept*	printerIntercept = NULL;
 ULONG					debugDumpIndex = 0;
 
 void initWinUsbWrapper() {
@@ -41,9 +40,6 @@ void initWinUsbWrapper() {
 		}
 	}
 #endif
-	if (printerIntercept == NULL) {
-		printerIntercept = new Core::PrinterIntercept();
-	}
 	if (hWinUsbLib == 0) {
 		// Load original winusb lib
 		hWinUsbLib = LoadLibrary(TEXT("C:\\Windows\\System32\\winusb.dll"));
@@ -280,7 +276,7 @@ BOOL __stdcall WinUsb_Wrapper_ReadPipe(
 		PULONG LengthTransferred,
 		LPOVERLAPPED Overlapped
 ) {
-#ifdef DEBUG_LOG_EX
+#ifdef DEBUG_LOG
 	log->writeString("WinUsb_ReadPipe(0x")->writeBinaryBuffer(&InterfaceHandle, sizeof(WINUSB_INTERFACE_HANDLE))
 		->writeString(", 0x")->writeBinaryBuffer(&PipeID, 1)->writeString(", [OutBuffer], 0x")->writeLong(BufferLength)
 		->writeString(", [OutLen], 0x")->writeBinaryBuffer(&Overlapped, 4)->writeString(")\r\n");
@@ -294,7 +290,7 @@ BOOL __stdcall WinUsb_Wrapper_ReadPipe(
 #ifdef DEBUG_LOG
 		logRaw->writeString("<")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
 #endif
-		printerIntercept->handleUsbRead(InterfaceHandle, PipeID, Buffer, *LengthTransferred);
+		Core::PrinterIntercept::getInstance()->handleUsbRead(InterfaceHandle, PipeID, Buffer, *LengthTransferred);
 		return true;
 	} else {
 #ifdef DEBUG_LOG_EX
@@ -350,7 +346,12 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		PULONG LengthTransferred,
 		LPOVERLAPPED Overlapped
 ) {
-	printerIntercept->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength);
+#ifdef DEBUG_LOG
+	log->writeString("WinUsb_WritePipe(0x")->writeBinaryBuffer(&InterfaceHandle, sizeof(WINUSB_INTERFACE_HANDLE))
+		->writeString(", 0x")->writeBinaryBuffer(&PipeID, 1)->writeString(", [OutBuffer], 0x")->writeLong(BufferLength)
+		->writeString(", [OutLen], 0x")->writeBinaryBuffer(&Overlapped, 4)->writeString(")\r\n");
+#endif
+	Core::PrinterIntercept::getInstance()->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength);
 	WINUSB_WRITE_PIPE func = (WINUSB_WRITE_PIPE) GetProcAddress(hWinUsbLib, "WinUsb_WritePipe");
 	if (func(InterfaceHandle, PipeID, Buffer, BufferLength, LengthTransferred, Overlapped)) {
 #ifdef DEBUG_LOG_EX

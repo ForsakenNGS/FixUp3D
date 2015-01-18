@@ -13,7 +13,17 @@
 
 namespace Core {
 
+PrinterIntercept* PrinterIntercept::instance = 0;
+
+PrinterIntercept* PrinterIntercept::getInstance() {
+	if (instance == 0) {
+		instance = new PrinterIntercept();
+	}
+	return instance;
+}
+
 PrinterIntercept::PrinterIntercept() {
+	customCommandsSending = false;
 	// Initialize log writer
 	char	sHomeDir[MAX_PATH];
 	char	sFilename[MAX_PATH];
@@ -38,6 +48,38 @@ PrinterIntercept::~PrinterIntercept() {
 	// TODO Auto-generated destructor stub
 }
 
+void PrinterIntercept::addCustomCommand(FixUp3DCustomCommand &command) {
+	customCommands.push(command);
+}
+
+void PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command) {
+	log->writeString("[CustomCmd] Sending command: 0x")->writeBinaryBuffer(&command.command, 2)->writeString(" ...\r\n");
+	ULONG	cmdBufferLen = command.argumentsLength + 2;
+	UCHAR	cmdBuffer[cmdBufferLen];
+	ULONG	transferLen = 0;
+	// Write command to buffer
+	*((PUSHORT)(cmdBuffer)) = command.command;
+	// Write arguments to buffer
+	memcpy(cmdBuffer + 2, command.arguments, command.argumentsLength);
+	// Free commands argument buffer
+	free(command.arguments);
+	command.arguments = 0;
+	// Write prepared command buffer
+	if (!WinUsb_WritePipe(interfaceHandle, 0x01, cmdBuffer, cmdBufferLen, &transferLen, NULL)) {
+		log->writeString("[CustomCmd] Failed to send custom command! Command: 0x")->writeBinaryBuffer(&command.command, 2)
+			->writeString(" Arguments: ")->writeBinaryBuffer(command.arguments, command.argumentsLength)->writeString("\r\n");
+	} else {
+		log->writeString("[CustomCmd] Wrote command: 0x")->writeBinaryBuffer(&command.command, 2)->writeString(" ...\r\n");
+		UCHAR	respBuffer[command.responseLength];
+		if (!WinUsb_ReadPipe(interfaceHandle, 0x81, respBuffer, command.responseLength, &transferLen, NULL)) {
+			log->writeString("[CustomCmd] Failed to read custom command reply! Command: 0x")->writeBinaryBuffer(&command.command, 2)
+				->writeString(" Arguments: ")->writeBinaryBuffer(command.arguments, command.argumentsLength)->writeString("\r\n");
+		} else {
+			log->writeString("[CustomCmd] Command 0x")->writeBinaryBuffer(&command.command, 2)->writeString(" successfully sent!")
+				->writeString(" Result: ")->writeBinaryBuffer(respBuffer, transferLen)->writeString("\r\n");
+		}
+	}
+}
 
 void PrinterIntercept::handleUsbRead(WINUSB_INTERFACE_HANDLE InterfaceHandle, UCHAR PipeID, PUCHAR Buffer, ULONG LengthTransferred) {
 	handleUpCmdReply(lastWriteCommand, lastWriteArgumentLo, lastWriteArgumentHi, lastWriteArgumentLong, Buffer, LengthTransferred);
@@ -51,51 +93,64 @@ void PrinterIntercept::handleUsbRead(WINUSB_INTERFACE_HANDLE InterfaceHandle, UC
 	lastWriteKeep = false;
 }
 
-void PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE InterfaceHandle, UCHAR PipeID, PUCHAR Buffer, ULONG BufferLength) {
-	if (BufferLength >= 2) {
+void PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG bufferLength) {
+	if (customCommandsSending) {
+		return;	// Do not handle own commands
+	}
+	// Send queued custom commands to be sent
+	if (!customCommands.empty()) {
+		customCommandsSending = true;
+		while (!customCommands.empty()) {
+			sendCustomCommand(interfaceHandle, customCommands.front());
+			customCommands.pop();
+		}
+		customCommandsSending = false;
+	}
+	// Handle write
+	if (bufferLength >= 2) {
 		// Get command and argument(s)
-		lastWriteCommand = *((PUSHORT)Buffer);
-		if (BufferLength >= 4) {
-			lastWriteArgumentLo = *((PUSHORT)(Buffer+2));
+		lastWriteCommand = *((PUSHORT)buffer);
+		if (bufferLength >= 4) {
+			lastWriteArgumentLo = *((PUSHORT)(buffer+2));
 		} else {
 			lastWriteArgumentLo = 0;
 		}
-		if (BufferLength >= 6) {
-			lastWriteArgumentHi = *((PUSHORT)(Buffer+4));
+		if (bufferLength >= 6) {
+			lastWriteArgumentHi = *((PUSHORT)(buffer+4));
 		} else {
 			lastWriteArgumentHi = 0;
 		}
 		lastWriteArgumentLong = (lastWriteArgumentHi<<16)|lastWriteArgumentLo;
 		lastWriteCustom = 0;
-		handleUpCmdSend(lastWriteCommand, lastWriteArgumentLo, lastWriteArgumentHi, lastWriteArgumentLong, Buffer, BufferLength);
+		handleUpCmdSend(lastWriteCommand, lastWriteArgumentLo, lastWriteArgumentHi, lastWriteArgumentLong, buffer, bufferLength);
 	}
 }
 
-void PrinterIntercept::handleUpCmdSend(USHORT Command, USHORT ArgLo, USHORT ArgHi, ULONG ArgLong, PUCHAR Buffer, ULONG BufferLength) {
+void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG bufferLength) {
 	PrinterSettings*	settings = PrinterSettings::getInstance();
 	switch (lastWriteCommand) {
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
-			settings->setHeaterTemperature(ArgLong, false);
+			settings->setHeaterTemperature(argLong, false);
 			ULONG TargetTemperature = settings->getHeaterTemperature();
-			if (TargetTemperature != ArgLong) {
+			if (TargetTemperature != argLong) {
 				// Override temperature!
-				log->writeString("[SetNozzle1Temp] Overriding Temperature: ")->writeLong(ArgLong)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
-				UPCMD_SetArgLong(Buffer, TargetTemperature);
+				log->writeString("[SetNozzle1Temp] Overriding Temperature: ")->writeLong(argLong)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
+				UPCMD_SetArgLong(buffer, TargetTemperature);
 			}
 			break;
 		}
 		case FIXUP3D_CMD_WRITE_MEM:
 		{
 			// Write to memory
-			ULONG MemoryOffset = *((PULONG)(Buffer+6));
-			log->writeString("[WriteMem] Arg: ")->writeBinaryBuffer(&ArgLong, 4)->writeString(" Data: ")->writeBinaryBuffer(Buffer+10, BufferLength-10)->writeString("\r\n");
+			ULONG MemoryOffset = *((PULONG)(buffer+6));
+			log->writeString("[WriteMem] Arg: ")->writeBinaryBuffer(&argLong, 4)->writeString(" Data: ")->writeBinaryBuffer(buffer+10, bufferLength-10)->writeString("\r\n");
 			if (MemoryOffset == 0x00000039) {
 				struct memSettings39 {
 					ULONG	temperature;
 					ULONG	unknown1;
 					ULONG	unknown2;
-				} *memSettings = ((memSettings39*)(Buffer+10));
+				} *memSettings = ((memSettings39*)(buffer+10));
 				settings->setHeaterTemperature(memSettings->temperature, false);
 				ULONG TargetTemperature = settings->getHeaterTemperature();
 				if (TargetTemperature != memSettings->temperature) {
@@ -111,36 +166,36 @@ void PrinterIntercept::handleUpCmdSend(USHORT Command, USHORT ArgLo, USHORT ArgH
 	}
 }
 
-void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT ArgHi, ULONG ArgLong, PUCHAR Buffer, ULONG LengthTransferred) {
-	switch (Command) {
+void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred) {
+	switch (command) {
 		case FIXUP3D_CMD_GET_BED_TEMP:
 		{
-			FLOAT temperature = *((PFLOAT)Buffer);
+			FLOAT temperature = *((PFLOAT)buffer);
 			log->writeString("[GetBedTemp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_GET_NOZZLE1_TEMP:
 		{
-			FLOAT temperature = *((PFLOAT)Buffer);
+			FLOAT temperature = *((PFLOAT)buffer);
 			log->writeString("[GetNozzle1Temp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_GET_NOZZLE2_TEMP:
 		{
-			FLOAT temperature = *((PFLOAT)Buffer);
+			FLOAT temperature = *((PFLOAT)buffer);
 			log->writeString("[GetNozzle2Temp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_GET_POSITION:
 		{
-			if (LengthTransferred == 5) {
-				ULONG result = *((PULONG)Buffer);
+			if (lengthTransferred == 5) {
+				ULONG result = *((PULONG)buffer);
 				if (result == 1) {
 					// Next read also belongs to this command
 					lastWriteKeep = true;
 				}
 				log->writeString("[GetPosition] Read 1 / Result: ")->writeLong(result)->writeString("\r\n");
-			} else if (LengthTransferred >= 49) {
+			} else if (lengthTransferred >= 49) {
 				// Cmd: 0x768C /  Example:
 				/*
 				 * Offset   0        4          9        13         18       22         27       31         36       40
@@ -148,24 +203,24 @@ void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT Arg
 				 * Decim    -110                60                  -115                4863
 				 * Desc     PosX     ???        PosY     ???        PosZ     ???        Nozzle	 ???        ???      ???                             END
 				 */
-				FLOAT posX = *((PFLOAT)Buffer);
-				FLOAT posY = *((PFLOAT)(Buffer+9));
-				FLOAT posZ = *((PFLOAT)(Buffer+18));
-				FLOAT nozzle = *((PFLOAT)(Buffer+27));
+				FLOAT posX = *((PFLOAT)buffer);
+				FLOAT posY = *((PFLOAT)(buffer+9));
+				FLOAT posZ = *((PFLOAT)(buffer+18));
+				FLOAT nozzle = *((PFLOAT)(buffer+27));
 				log->writeString("[GetPosition] Read 2 / PosX: ")->writeFloat(posX)->writeString(" PosY: ")->writeFloat(posY)->writeString(" PosZ: ")->writeFloat(posZ)
-						->writeString(" Nozzle: ")->writeFloat(nozzle)->writeString(" Debug: ")->writeLong(LengthTransferred)->writeString("\r\n");
+						->writeString(" Nozzle: ")->writeFloat(nozzle)->writeString(" Debug: ")->writeLong(lengthTransferred)->writeString("\r\n");
 			}
 			break;
 		}
 		case FIXUP3D_CMD_GET_PREHEAT_TIMER:
 		{
-			ULONG result = *((PUSHORT)Buffer);	// Time is stored in 2-minute units
+			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-minute units
 			log->writeString("[GetPreheatTimer] Result: ")->writeLong(result)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_GET_LAYER:
 		{
-			ULONG result = *((PUSHORT)Buffer);	// Time is stored in 2-minute units
+			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-minute units
 			log->writeString("[GetLayer] Result: ")->writeLong(result)->writeString("\r\n");
 			break;
 		}
@@ -187,37 +242,37 @@ void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT Arg
 		case FIXUP3D_CMD_GET_UNKOWN21:
 		case FIXUP3D_CMD_GET_UNKOWN32:
 		{
-			ULONG result = *((PUSHORT)Buffer);	// Time is stored in 2-minute units
-			log->writeString("[GetUnknown")->writeBinaryBuffer(&Command, 2)->writeString("] Result: ")->writeLong(result)->writeString("\r\n");
+			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-minute units
+			log->writeString("[GetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Result: ")->writeLong(result)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_SET_PREHEAT_TIMER:
 		{
-			if (ArgLo == 0) {
-				log->writeString("[SetPreheatTimer] Disabled preheating. Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			if (argLo == 0) {
+				log->writeString("[SetPreheatTimer] Disabled preheating. Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			} else {
-				log->writeString("[SetPreheatTimer] Duration: ")->writeLong(ArgLo / 30)->writeString("min Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+				log->writeString("[SetPreheatTimer] Duration: ")->writeLong(argLo / 30)->writeString("min Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			}
 			break;
 		}
 		case FIXUP3D_CMD_SET_BED_TEMP:
 		{
-			log->writeString("[SetBedTemp] Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			log->writeString("[SetBedTemp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
-			log->writeString("[SetNozzle1Temp] Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			log->writeString("[SetNozzle1Temp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_SET_NOZZLE2_TEMP:
 		{
-			log->writeString("[SetNozzle2Temp] Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			log->writeString("[SetNozzle2Temp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_WRITE_MEM:
 		{
-			log->writeString("[WriteMem] Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			log->writeString("[WriteMem] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 		case FIXUP3D_CMD_NONE:
@@ -225,18 +280,28 @@ void PrinterIntercept::handleUpCmdReply(USHORT Command, USHORT ArgLo, USHORT Arg
 			// Unknown command
 			log->writeString("[NoCmd 0x")->writeBinaryBuffer(&lastWriteCustom,2)
 				->writeString("] Args:")->writeBinaryBuffer(&lastWriteCustom+2,2)
-				->writeString(" Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+				->writeString(" Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 		default:
 		{
 			// Unknown command
-			log->writeString("[UnknownCmd 0x")->writeBinaryBuffer(&Command,2)
-				->writeString("] Args:")->writeBinaryBuffer(&ArgLong,4)
-				->writeString(" Result: ")->writeBinaryBuffer(Buffer,LengthTransferred)->writeString("\r\n");
+			log->writeString("[UnknownCmd 0x")->writeBinaryBuffer(&command,2)
+				->writeString("] Args:")->writeBinaryBuffer(&argLong,4)
+				->writeString(" Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
 			break;
 		}
 	}
+}
+
+void PrinterIntercept::setNozzle1Temp(ULONG temperature) {
+	FixUp3DCustomCommand	cmd;
+	cmd.command = FIXUP3D_CMD_SET_NOZZLE1_TEMP;
+	cmd.arguments = malloc(4);
+	memcpy(cmd.arguments, &temperature, 4);
+	cmd.argumentsLength = 4;
+	cmd.responseLength = 1;
+	addCustomCommand(cmd);
 }
 
 } /* namespace Core */
