@@ -288,7 +288,11 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_UNKOWN1F:
 		case FIXUP3D_CMD_GET_UNKOWN20:
 		case FIXUP3D_CMD_GET_UNKOWN21:
+		case FIXUP3D_CMD_GET_UNKOWN2A:
+		case FIXUP3D_CMD_GET_UNKOWN2B:
 		case FIXUP3D_CMD_GET_UNKOWN32:
+		case FIXUP3D_CMD_GET_UNKOWN36:
+		case FIXUP3D_CMD_GET_UNKOWN3E:
 		{
 			ULONG result = *((PUSHORT)buffer);
 			log->writeString("[GetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Result: ")->writeLong(result)->writeString("\r\n");
