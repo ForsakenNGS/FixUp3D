@@ -7,6 +7,7 @@
 
 #include "PrinterIntercept.h"
 #include "PrinterSettings.h"
+#include "UpPrinterData.h"
 #include <iostream>
 #include <direct.h>
 #include <Shlobj.h>
@@ -15,7 +16,7 @@
 
 namespace Core {
 
-PrinterIntercept* PrinterIntercept::instance = 0;
+PrinterIntercept* PrinterIntercept::instance = NULL;
 
 PrinterIntercept* PrinterIntercept::getInstance() {
 	if (instance == 0) {
@@ -136,6 +137,13 @@ void PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, U
 void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG bufferLength) {
 	PrinterSettings*	settings = PrinterSettings::getInstance();
 	switch (lastWriteCommand) {
+
+	case FIXUP3D_CMD_GET_PRINTERPARAM:
+		{
+			UpPrinterData::getInstance()->PrinterDataReset();
+		}
+		break;
+
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
 			settings->setHeaterTemperature(argLong, false);
@@ -145,8 +153,9 @@ void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 				log->writeString("[SetNozzle1Temp] Overriding Temperature: ")->writeLong(argLong)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
 				UPCMD_SetArgLong(buffer, TargetTemperature);
 			}
-			break;
 		}
+		break;
+
 		case FIXUP3D_CMD_SET_UNKNOWN0A:
 		case FIXUP3D_CMD_SET_UNKNOWN0B:
 		case FIXUP3D_CMD_SET_UNKNOWN10:
@@ -204,7 +213,15 @@ void PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 }
 
 void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred) {
-	switch (command) {
+	switch (command)
+	{
+		case FIXUP3D_CMD_GET_PRINTERPARAM:
+		{
+			log->writeString("[GetPrinterParam] Result: ")->writeString("\r\n");
+			lastWriteKeep = UpPrinterData::getInstance()->PrinterDataFromUpResponse(buffer,lengthTransferred);
+		}
+		break;
+
 		case FIXUP3D_CMD_GET_BED_TEMP:
 		{
 			FLOAT temperature = *((PFLOAT)buffer);
