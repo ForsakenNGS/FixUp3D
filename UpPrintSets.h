@@ -94,6 +94,7 @@ public:
 					  float OP6
 					);
 
+	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index);
 	unsigned int GetPrintSetData( unsigned char** ppSetData );
 
 private:

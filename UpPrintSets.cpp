@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <string.h>
 #include "UpPrintSets.h"
+#include "PrinterSettings.h"
 
 UpPrintSets* UpPrintSets::instance = NULL;
 
@@ -34,8 +35,8 @@ bool UpPrintSets::AddPrintSet(UP_PRINT_SET_STRUCT* pPrintSet)
 		return false;
 
 	memcpy( &print_sets[print_sets_valid], pPrintSet, sizeof(UP_PRINT_SET_STRUCT) );
+	Core::PrinterSettings::getInstance()->updatePrintSet(print_sets_valid, &print_sets[print_sets_valid]);
 	print_sets_valid++;
-
 	return true;
 }
 
@@ -78,9 +79,18 @@ bool UpPrintSets::AddPrintSet(char set_name[16], float nozzle_diameter,
 	print_sets[print_sets_valid].other_param_4 = OP4;
 	print_sets[print_sets_valid].other_param_5 = OP5;
 	print_sets[print_sets_valid].other_param_6 = OP6;
+	Core::PrinterSettings::getInstance()->updatePrintSet(print_sets_valid, &print_sets[print_sets_valid]);
 	print_sets_valid++;
 
 	return true;
+}
+
+UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index)
+{
+	if (print_sets_valid > index) {
+		return &print_sets[index];
+	}
+	return NULL;
 }
 
 unsigned int UpPrintSets::GetPrintSetData(unsigned char** ppSetData)
