@@ -55,8 +55,9 @@ private:
 	WINUSB_INTERFACE_HANDLE			hUsbInterface;
 	unsigned int					iPrintSetIndex;
 	unsigned int					iPrintSetCount;
+	// Current setup
+	struct PrinterSettingsStruct	settings;
 	// Printer status
-
 	// Window elements
 	HWND							hLabelHeaterTemp;
 	HWND							hEditHeaterTemp;
