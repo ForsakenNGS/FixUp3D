@@ -81,7 +81,7 @@ int initializeSettingsWindow(HINSTANCE hDllHandle)
 	HWND hWnd = CreateWindow( szWindowClass, szTitle,
 			                  (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX),
 							  CW_USEDEFAULT, CW_USEDEFAULT,
-							  348, 178,
+							  476, 386,
 							  NULL,
 							  NULL,
 							  hDllHandle,
