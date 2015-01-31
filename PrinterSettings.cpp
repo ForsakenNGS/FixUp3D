@@ -49,6 +49,42 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hCheckHeaterTemp = NULL;
 	hButtonSetTemp = NULL;
 	hTabPrinterSets = NULL;
+	hLabelNozzleDiameter = NULL;
+	hEditNozzleDiameter = NULL;
+	hLabelLayerThickness = NULL;
+	hEditLayerThickness = NULL;
+	hLabelScanWidth = NULL;
+	hEditScanWidth = NULL;
+	hLabelScanTimes = NULL;
+	hEditScanTimes = NULL;
+	hLabelHatchWidth = NULL;
+	hEditHatchWidth = NULL;
+	hLabelHatchSpace = NULL;
+	hEditHatchSpace = NULL;
+	hLabelHatchLayer = NULL;
+	hEditHatchLayer = NULL;
+	hLabelSupportWidth = NULL;
+	hEditSupportWidth = NULL;
+	hLabelSupportSpace = NULL;
+	hEditSupportSpace = NULL;
+	hLabelSupportLayer = NULL;
+	hEditSupportLayer = NULL;
+	hLabelScanSpeed = NULL;
+	hEditScanSpeed = NULL;
+	hLabelHatchSpeed = NULL;
+	hEditHatchSpeed = NULL;
+	hLabelSupportSpeed = NULL;
+	hEditSupportSpeed = NULL;
+	hLabelJumpSpeed = NULL;
+	hEditJumpSpeed = NULL;
+	hLabelScanScale = NULL;
+	hEditScanScale = NULL;
+	hLabelHatchScale = NULL;
+	hEditHatchScale = NULL;
+	hLabelSupportScale = NULL;
+	hEditSupportScale = NULL;
+	hLabelFeedScale = NULL;
+	hEditFeedScale = NULL;
 }
 
 PrinterSettings::~PrinterSettings() {
