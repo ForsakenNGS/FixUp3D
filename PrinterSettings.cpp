@@ -134,6 +134,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					break;
 				}
 			}
+			break;
 		}
 		case WM_COMMAND:
 		{
