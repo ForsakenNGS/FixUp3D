@@ -368,6 +368,9 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		->writeString(", 0x")->writeBinaryBuffer(&PipeID, 1)->writeString(", [OutBuffer], 0x")->writeLong(BufferLength)
 		->writeString(", [OutLen], 0x")->writeBinaryBuffer(&Overlapped, 4)->writeString(")\r\n");
 #endif
+#ifdef DEBUG_LOG
+		logRaw->writeString(">")->writeBinaryBuffer(Buffer, BufferLength)->writeString("\r\n");
+#endif
 	Core::PrinterIntercept::getInstance()->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength);
 	if( WinUsb_WritePipe( InterfaceHandle, PipeID, Buffer, BufferLength, LengthTransferred, Overlapped ) )
 	{

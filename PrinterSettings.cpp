@@ -196,13 +196,24 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 				}
 			}
 			if (HIWORD(wParam) == EN_CHANGE) {
+				CHAR*			tmpInputText = new CHAR[32];
+				stringstream 	stream;
+				if ((LOWORD(wParam) & 0xF00) == 0x600) {
+					// Printer set input field
+					UP_PRINT_SET_STRUCT* printSet = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex);
+					if (printSet != NULL) {
+						if (LOWORD(wParam) == IDC_INPUT_NOZZLE_DIAMETER) {
+							GetWindowTextA(hEditNozzleDiameter, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->nozzle_diameter;
+						}
+					}
+				}
 				if (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP) {
 					// Heater temp changed
-					CHAR*			newHeaterTempText = new CHAR[16];
 					ULONG			newHeaterTemp = 0;
-					stringstream 	stream;
-					GetWindowTextA(hEditHeaterTemp, newHeaterTempText, 16);
-					stream << newHeaterTempText << flush;
+					GetWindowTextA(hEditHeaterTemp, tmpInputText, 32);
+					stream << tmpInputText << flush;
 					stream >> newHeaterTemp;
 					if (newHeaterTemp != settings.heaterTemp) {
 						// Temperature changed
@@ -219,6 +230,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 						}
 					}
 				}
+				delete[] tmpInputText;
 			}
 			break;
 		}
