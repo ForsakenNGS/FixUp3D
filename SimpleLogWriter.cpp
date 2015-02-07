@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define LOG_TO_CONSOLE
+
 namespace Core {
 
 SimpleLogWriter::SimpleLogWriter(const TCHAR* debugFilename) {
@@ -36,6 +38,9 @@ SimpleLogWriter* SimpleLogWriter::writeLong(ULONG number) {
 	}
 	stringstream	stream;
 	stream << number << flush;
+#ifdef LOG_TO_CONSOLE
+	cout << number;
+#endif
 	const char* sBuffer = stream.str().c_str();
 	DWORD		dwBufferLen = stream.str().length();
     DWORD 		dwBytesWritten = 0;
@@ -52,6 +57,9 @@ SimpleLogWriter* SimpleLogWriter::writeFloat(FLOAT number) {
 	}
 	stringstream	stream;
 	stream << number << flush;
+#ifdef LOG_TO_CONSOLE
+	cout << number;
+#endif
 	const char* sBuffer = stream.str().c_str();
 	DWORD		dwBufferLen = stream.str().length();
     DWORD 		dwBytesWritten = 0;
@@ -68,6 +76,9 @@ SimpleLogWriter* SimpleLogWriter::writeString(const char* text) {
 	}
 	stringstream	stream;
 	stream << text << flush;
+#ifdef LOG_TO_CONSOLE
+	cout << text;
+#endif
 	DWORD		dwBufferLen = strlen(stream.str().c_str());
     DWORD 		dwBytesWritten = 0;
     BOOL bErrorFlag = WriteFile(hFile, stream.str().c_str(), dwBufferLen, &dwBytesWritten, NULL);
@@ -89,6 +100,9 @@ SimpleLogWriter* SimpleLogWriter::writeBinaryBuffer(PVOID buffer, ULONG bufferLe
 	for (ULONG i = 0; i < bufferLength; i++) {
 		sprintf(sBuffer, "%02x", *((PUCHAR)buffer + i));
 		bErrorFlag = WriteFile(hFile, sBuffer, 2, &dwBytesWritten, NULL);
+#ifdef LOG_TO_CONSOLE
+		cout << sBuffer;
+#endif
 	    if (!bErrorFlag) {
 	    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeBinaryBuffer failed", MB_OK);
 	    }

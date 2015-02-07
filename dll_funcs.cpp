@@ -5,7 +5,7 @@
  *      Author: Forsaken
  */
 
-#define DEBUG_LOG
+#define DEBUG_LOG_RAW
 
 #include "dll_funcs.h"
 #include "PrinterIntercept.h"
@@ -25,7 +25,7 @@ ULONG					debugDumpIndex = 0;
 
 BOOL InitWinUsbWrapper()
 {
-#ifdef DEBUG_LOG
+#if defined(DEBUG_LOG) || defined(DEBUG_LOG_RAW)
 	if (log == NULL) {
 		TCHAR sHomeDir[MAX_PATH];
 		TCHAR sFilename[MAX_PATH];
@@ -302,7 +302,7 @@ BOOL __stdcall WinUsb_Wrapper_ReadPipe(
 		log->writeString(" => Success! Length transferred: ")->writeLong(*LengthTransferred)->writeString("\r\n");
 		log->writeString("    Buffer content: 0x")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
 #endif
-#ifdef DEBUG_LOG
+#ifdef DEBUG_LOG_RAW
 		logRaw->writeString("<")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
 #endif
 		Core::PrinterIntercept::getInstance()->handleUsbRead(InterfaceHandle, PipeID, Buffer, *LengthTransferred);
@@ -368,7 +368,7 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		->writeString(", 0x")->writeBinaryBuffer(&PipeID, 1)->writeString(", [OutBuffer], 0x")->writeLong(BufferLength)
 		->writeString(", [OutLen], 0x")->writeBinaryBuffer(&Overlapped, 4)->writeString(")\r\n");
 #endif
-#ifdef DEBUG_LOG
+#ifdef DEBUG_LOG_RAW
 		logRaw->writeString(">")->writeBinaryBuffer(Buffer, BufferLength)->writeString("\r\n");
 #endif
 	Core::PrinterIntercept::getInstance()->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength);
