@@ -5,7 +5,7 @@
  *      Author: Forsaken
  */
 
-#define DEBUG_LOG_RAW
+//#define DEBUG_LOG_RAW
 
 #include "dll_funcs.h"
 #include "PrinterIntercept.h"

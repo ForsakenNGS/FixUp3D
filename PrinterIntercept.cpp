@@ -257,19 +257,32 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		case FIXUP3D_CMD_WRITE_MEM_2:
 		case FIXUP3D_CMD_WRITE_MEM_3:
 		{
-			// Read the memory block to be sent
-			FixUp3DMemBlock* memBlock = NULL;
-			UCHAR numBlocks = UPCMD_GetArgHi(command);
-			ULONG blockSize = numBlocks * sizeof(FixUp3DMemBlock) + (numBlocks == 3 ? 4 : 2);
-			for (UCHAR curBlock = 0; curBlock < numBlocks; curBlock++) {
-				memBlock = (FixUp3DMemBlock*)(buffer + 2 + (sizeof(FixUp3DMemBlock) * curBlock));
-				handleUpMemBlock(memBlock);
-			}
-			// Check if there are more commands ahead
-			if (bufferLength > blockSize) {
-				USHORT	nextCmd = *((PUSHORT)(buffer + blockSize));
-				ULONG	nextArgLong = *((PULONG)(buffer + blockSize + 4));
-				return handleUpCmdSend(nextCmd, UPCMD_GetArgLo(nextArgLong), UPCMD_GetArgHi(nextArgLong), nextArgLong, buffer + blockSize, bufferLength - blockSize);
+			PUCHAR pBuf = buffer;
+			ULONG len = bufferLength;
+			for (;;) {
+				UCHAR numBlocks = *(pBuf + 1);
+				pBuf += 2; //JUMP OVER 2Fxx
+				len -= 2;
+				// Iterate memory blocks
+				for (UCHAR curBlock = 0; curBlock < numBlocks; curBlock++) {
+					handleUpMemBlock((FixUp3DMemBlock*) pBuf);
+					pBuf += sizeof(FixUp3DMemBlock);
+					len -= sizeof(FixUp3DMemBlock);
+				}
+				// Check for end of buffer
+				if (0 == len) {
+					break; //END OF BUFFER
+				}
+				// Check for padding bytes
+				if ( (0 != *pBuf) || (0 != *(pBuf+1)) ) {
+					break; //INVALID chaining terminator
+				}
+				pBuf += 2;	//JUMP OVER 0000
+				len -= 2;
+				// Check for next command
+				if (0x2F != *pBuf) {
+					break; //INVALID NEXT CMD
+				}
 			}
 			break;
 		}
