@@ -16,7 +16,12 @@
 #define IDC_LABEL_HEATER_TEMP	0x101
 #define IDC_INPUT_HEATER_TEMP	0x201
 #define IDC_CHECK_HEATER_TEMP	0x301
+#define IDC_LABEL_PREHEAT_TIME	0x102
+#define IDC_INPUT_PREHEAT_TIME	0x202
+#define IDC_CHECK_PREHEAT_TIME	0x302
 #define IDC_BUTTON_SET_TEMP		0x401
+#define IDC_BUTTON_STOP_PRINT	0x402
+#define IDC_BUTTON_PRINT_AGAIN	0x403
 #define IDC_TAB_PRINTER_SETS	0x501
 
 #define IDC_INPUT_NOZZLE_DIAMETER	0x601
@@ -38,13 +43,15 @@
 #define IDC_INPUT_SUPPORT_SCALE		0x611
 #define IDC_INPUT_FEED_SCALE		0x612
 
-#define	PRINTER_SETTING_VERSION	0x0100
+#define	PRINTER_SETTING_VERSION	0x0101
 
 namespace Core {
 
 struct PrinterSettingsStruct {
 	ULONG		heaterTemp;
 	BOOL		heaterTempOverride;
+	ULONG		preheatTime;
+	BOOL		preheatDelay;
 };
 
 class PrinterSettings {
@@ -62,7 +69,12 @@ private:
 	HWND							hLabelHeaterTemp;
 	HWND							hEditHeaterTemp;
 	HWND							hCheckHeaterTemp;
+	HWND							hLabelPreheatTime;
+	HWND							hEditPreheatTime;
+	HWND							hCheckPreheatTime;
 	HWND							hButtonSetTemp;
+	HWND							hButtonStopPrint;
+	HWND							hButtonPrintAgain;
 	HWND							hTabPrinterSets;
 
 	HWND							hLabelNozzleDiameter;
@@ -111,8 +123,11 @@ public:
 
 	void	applyHeaterTemperature();
 	USHORT	getHeaterTemperature();
+	ULONG	getPreheatTime();
+	BOOL	getPreheatDelayPrint();
 	void	setHeaterTemperature(USHORT newTemp);
 	void	setHeaterTemperature(USHORT newTemp, BOOL override);
+	void	setPreheatTime(ULONG preheatSeconds);
 	void	setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle);
 	void	readSettingsFromConfig(HWND hWnd);
 	void	resetHeaterTemperature();

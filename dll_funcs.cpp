@@ -296,6 +296,11 @@ BOOL __stdcall WinUsb_Wrapper_ReadPipe(
 		->writeString(", 0x")->writeBinaryBuffer(&PipeID, 1)->writeString(", [OutBuffer], 0x")->writeLong(BufferLength)
 		->writeString(", [OutLen], 0x")->writeBinaryBuffer(&Overlapped, 4)->writeString(")\r\n");
 #endif
+	*LengthTransferred = Core::PrinterIntercept::getInstance()->handleUsbPreRead(InterfaceHandle, PipeID, Buffer, BufferLength);
+	if (*LengthTransferred > 0) {
+		// Prevent reading and supply a custom response instead
+		return TRUE;
+	}
 	if( WinUsb_ReadPipe( InterfaceHandle, PipeID, Buffer, BufferLength, LengthTransferred, Overlapped ) )
 	{
 #ifdef DEBUG_LOG_EX
@@ -371,7 +376,14 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 #ifdef DEBUG_LOG_RAW
 		logRaw->writeString(">")->writeBinaryBuffer(Buffer, BufferLength)->writeString("\r\n");
 #endif
-	Core::PrinterIntercept::getInstance()->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength);
+	if (!Core::PrinterIntercept::getInstance()->handleUsbWrite(InterfaceHandle, PipeID, Buffer, BufferLength)) {
+		// Prevent writing!
+#ifdef DEBUG_LOG_EX
+		log->writeString(" => Success! Length transferred: ")->writeLong(*LengthTransferred)->writeString("\r\n");
+		//log->writeString("    Buffer sent: 0x")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
+#endif
+		return true;
+	}
 	if( WinUsb_WritePipe( InterfaceHandle, PipeID, Buffer, BufferLength, LengthTransferred, Overlapped ) )
 	{
 #ifdef DEBUG_LOG_EX
