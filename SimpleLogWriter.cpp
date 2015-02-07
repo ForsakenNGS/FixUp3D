@@ -38,15 +38,14 @@ SimpleLogWriter* SimpleLogWriter::writeLong(ULONG number) {
 	}
 	stringstream	stream;
 	stream << number << flush;
+	string			buffer = stream.str();
+    DWORD 			dwBytesWritten = 0;
 #ifdef LOG_TO_CONSOLE
-	cout << number;
+	cout << buffer;
 #endif
-	const char* sBuffer = stream.str().c_str();
-	DWORD		dwBufferLen = stream.str().length();
-    DWORD 		dwBytesWritten = 0;
-    BOOL bErrorFlag = WriteFile(hFile, sBuffer, dwBufferLen, &dwBytesWritten, NULL);
+    BOOL bErrorFlag = WriteFile(hFile, buffer.c_str(), buffer.length(), &dwBytesWritten, NULL);
     if (!bErrorFlag) {
-    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeLong failed", MB_OK);
+    	MessageBoxA(NULL, buffer.c_str(), "UpUsbIntercept: writeLong failed", MB_OK);
     }
     return this;
 }
@@ -57,15 +56,14 @@ SimpleLogWriter* SimpleLogWriter::writeFloat(FLOAT number) {
 	}
 	stringstream	stream;
 	stream << number << flush;
+	string			buffer = stream.str();
+    DWORD 			dwBytesWritten = 0;
 #ifdef LOG_TO_CONSOLE
-	cout << number;
+	cout << buffer;
 #endif
-	const char* sBuffer = stream.str().c_str();
-	DWORD		dwBufferLen = stream.str().length();
-    DWORD 		dwBytesWritten = 0;
-    BOOL bErrorFlag = WriteFile(hFile, sBuffer, dwBufferLen, &dwBytesWritten, NULL);
+    BOOL bErrorFlag = WriteFile(hFile, buffer.c_str(), buffer.length(), &dwBytesWritten, NULL);
     if (!bErrorFlag) {
-    	MessageBoxA(NULL, sBuffer, "UpUsbIntercept: writeLong failed", MB_OK);
+    	MessageBoxA(NULL, buffer.c_str(), "UpUsbIntercept: writeFloat failed", MB_OK);
     }
     return this;
 }
