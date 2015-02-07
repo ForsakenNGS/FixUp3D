@@ -63,7 +63,33 @@ void PrinterIntercept::addCustomCommand(FixUp3DCustomCommand &command) {
 	customCommands.push(command);
 }
 
-void PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command) {
+void PrinterIntercept::addCustomCommandDelay(ULONG delayInMs) {
+	ULARGE_INTEGER timeResume;
+	timeResume.QuadPart = 0;
+	GetSystemTimeAsFileTime((LPFILETIME)&timeResume);
+	timeResume.QuadPart += delayInMs * (ULONGLONG)10000;
+	FixUp3DCustomCommand	cmdDelay;
+	cmdDelay.command = FIXUP3D_CMD_PAUSE;
+	cmdDelay.commandBytes = 2;
+	cmdDelay.arguments = malloc( sizeof(ULARGE_INTEGER) );
+	memcpy(cmdDelay.arguments, &timeResume, sizeof(ULARGE_INTEGER));
+	cmdDelay.argumentsLength = sizeof(ULARGE_INTEGER);
+	cmdDelay.responseLength = 0;
+	addCustomCommand(cmdDelay);
+}
+
+BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command) {
+	if (command.command == FIXUP3D_CMD_PAUSE) {
+		// Check if resume time is reached
+		ULARGE_INTEGER	timeNow;
+		GetSystemTimeAsFileTime((LPFILETIME)&timeNow);
+		ULARGE_INTEGER&	timeResume = *((ULARGE_INTEGER*)command.arguments);
+		if (timeNow.QuadPart >= timeResume.QuadPart) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 	log->writeString("[CustomCmd] Sending command: 0x")->writeBinaryBuffer(&command.command, command.commandBytes)->writeString(" ...\r\n");
 	ULONG	cmdBufferLen = command.commandBytes + command.argumentsLength;
 	UCHAR	cmdBuffer[cmdBufferLen];
@@ -93,6 +119,7 @@ void PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 				->writeString(" Result: ")->writeBinaryBuffer(respBuffer, transferLen)->writeString("\r\n");
 		}
 	}
+	return true;
 }
 
 /**
@@ -139,8 +166,11 @@ BOOL PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, U
 	if (!customCommands.empty()) {
 		customCommandsSending = true;
 		while (!customCommands.empty()) {
-			sendCustomCommand(interfaceHandle, customCommands.front());
-			customCommands.pop();
+			if (sendCustomCommand(interfaceHandle, customCommands.front())) {
+				customCommands.pop();
+			} else {
+				break;
+			}
 		}
 		customCommandsSending = false;
 	}
@@ -307,9 +337,11 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_PREHEAT_TIMER:
 		{
 			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-second units
+			settings->updatePreheatTimer(result);
+			settings->updateWindowTitle();
 			log->writeString("[GetPreheatTimer] Result: ")->writeLong(result)->writeString("\r\n");
-			if (result <= 0) {
-				if (preheatPrintAgainAfter) {
+			if (result > 1) {
+				if ((result < 5) && preheatPrintAgainAfter) {
 					preheatDone = true;
 					preheatPrintAgainAfter = false;
 					printAgain();
@@ -345,13 +377,18 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 					// Wait until prheat is done?
 					if (printerStatus == FIXUP3D_STATUS_PRINTING) {
 						if (!preheatDone && settings->getPreheatDelayPrint()) {
+							// Weit until beeping stopped
+							addCustomCommandDelay(5000);
 							// Send stop command to printer in order to prevent starting the print job
 							stopPrint();
 							preheatDone = true;
 							preheatPrintAgainAfter = true;
+							// Wait until print was stopped...
+							addCustomCommandDelay(6000);
+							// ... then start the preheat timer ...
 							setPreheatTimer(settings->getPreheatTime());
 						}
-					} else {
+					} else if (!preheatPrintAgainAfter) {
 						preheatDone = false;
 					}
 					break;

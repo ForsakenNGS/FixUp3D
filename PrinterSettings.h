@@ -59,7 +59,9 @@ private:
     static PrinterSettings			*instance;
 
 	HINSTANCE						hInstDll;
+	HWND							hWindow;
 	WINUSB_INTERFACE_HANDLE			hUsbInterface;
+	ULONG							lPreheatTimer;
 	unsigned int					iPrintSetIndex;
 	unsigned int					iPrintSetCount;
 	// Current setup
@@ -125,13 +127,16 @@ public:
 	USHORT	getHeaterTemperature();
 	ULONG	getPreheatTime();
 	BOOL	getPreheatDelayPrint();
+	void	setHWnd(HWND hWnd);
 	void	setHeaterTemperature(USHORT newTemp);
 	void	setHeaterTemperature(USHORT newTemp, BOOL override);
-	void	setPreheatTime(ULONG preheatSeconds);
+	void	setPreheatTimer(ULONG preheatSeconds);
 	void	setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle);
 	void	readSettingsFromConfig(HWND hWnd);
 	void	resetHeaterTemperature();
+	void	updatePreheatTimer(ULONG newTime);
 	void	updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet);
+	void	updateWindowTitle();
 	void	writeSettingsToConfig();
 };
 

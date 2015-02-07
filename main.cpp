@@ -58,8 +58,7 @@ LRESULT CALLBACK PrinterDialogWndProc(HWND hWnd, UINT message, WPARAM wParam, LP
 
 int initializeSettingsWindow(HINSTANCE hDllHandle)
 {
-//	Core::PrinterSettings *settings =
-	Core::PrinterSettings::getInstanceNew(hDllHandle);
+	Core::PrinterSettings *settings = Core::PrinterSettings::getInstanceNew(hDllHandle);
 
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
@@ -96,6 +95,7 @@ int initializeSettingsWindow(HINSTANCE hDllHandle)
 	// Show window
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
+	settings->setHWnd(hWnd);
 
 	// Main message loop:
     MSG msg;

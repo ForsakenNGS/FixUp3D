@@ -101,6 +101,7 @@ namespace Core {
 #define	FIXUP3D_CMD_GET_CONNECTED		UPCMD(0x01,0x00)
 
 #define FIXUP3D_CMD_NONE				UPCMD(0xFF,0xFF)
+#define FIXUP3D_CMD_PAUSE				UPCMD(0xFF,0x01)
 
 // Printer status values
 #define FIXUP3D_STATUS_UNKNOWN0			0x01
@@ -121,11 +122,11 @@ namespace Core {
 #define FIXUP3D_MEM_PARAM_NOZZLE1_TEMP	0x00000039
 
 struct	FixUp3DCustomCommand {
-	USHORT	command;
-	USHORT	commandBytes;
-	void*	arguments;
-	ULONG	argumentsLength;
-	ULONG	responseLength;
+	USHORT			command;
+	USHORT			commandBytes;
+	void*			arguments;
+	ULONG			argumentsLength;
+	ULONG			responseLength;
 };
 
 union	FixUp3DMemBlockParams {
@@ -178,7 +179,8 @@ private:
 	ULONG					memCurrentLayer;
 
 	void	addCustomCommand(FixUp3DCustomCommand &command);
-	void	sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command);
+	void	addCustomCommandDelay(ULONG delayInMs);
+	BOOL	sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command);
 	BOOL	handleUpCmdSend(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG bufferLength);
 	void	handleUpCmdReply(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred);
 	void	handleUpMemBlock(FixUp3DMemBlock* memBlock);

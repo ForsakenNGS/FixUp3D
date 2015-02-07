@@ -37,6 +37,7 @@ PrinterSettings* PrinterSettings::getInstanceNew(HINSTANCE hInstance) {
 
 PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hInstDll = hInstance;
+	hWindow = NULL;
 	hUsbInterface = NULL;
 	iPrintSetIndex = 0;
 	iPrintSetCount = 0;
@@ -289,6 +290,10 @@ BOOL PrinterSettings::getPreheatDelayPrint() {
 	return settings.preheatDelay;
 }
 
+void PrinterSettings::setHWnd(HWND hWnd) {
+	hWindow = hWnd;
+}
+
 void PrinterSettings::setHeaterTemperature(USHORT newTemp) {
 	setHeaterTemperature(newTemp, true);
 }
@@ -310,7 +315,7 @@ void PrinterSettings::setHeaterTemperature(USHORT newTemp, BOOL override) {
 	settings.heaterTempOverride = (override ? true : settings.heaterTempOverride);
 }
 
-void PrinterSettings::setPreheatTime(ULONG preheatSeconds) {
+void PrinterSettings::setPreheatTimer(ULONG preheatSeconds) {
 	settings.preheatTime = preheatSeconds;
 	// Update input field
 	CHAR* cPreheatMinutes = new CHAR[16];
@@ -366,6 +371,10 @@ void PrinterSettings::resetHeaterTemperature() {
 	settings.heaterTempOverride = false;
 }
 
+void PrinterSettings::updatePreheatTimer(ULONG newTime) {
+	lPreheatTimer = newTime;
+}
+
 void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet) {
 	CHAR* cTemp = new CHAR[32];
 	if (index >= iPrintSetCount) {
@@ -416,6 +425,18 @@ void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* pr
 		SetWindowTextA(hEditFeedScale, cTemp);
 	}
 	delete[] cTemp;
+}
+
+void PrinterSettings::updateWindowTitle() {
+	if (hWindow != NULL) {
+		stringstream	ssWindowTitle;
+		ssWindowTitle << "FixUp3D";
+		if (lPreheatTimer > 0) {
+			ssWindowTitle << " - Preheating " << (lPreheatTimer / 30) << "Min";
+		}
+		ssWindowTitle << flush;
+		SetWindowTextA(hWindow, ssWindowTitle.str().c_str());
+	}
 }
 
 void PrinterSettings::writeSettingsToConfig() {
