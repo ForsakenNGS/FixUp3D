@@ -99,3 +99,8 @@ UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index)
 void UpPrintSets::ResetPrintSets() {
 	print_sets_valid = 0;
 }
+
+unsigned int UpPrintSets::GetPrintSetsAvail() {
+	return print_sets_valid;
+}
+

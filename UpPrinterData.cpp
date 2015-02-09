@@ -203,7 +203,7 @@ uint32_t UpPrinterData::GetPrinterDataEmulation(unsigned char* pDataOut, unsigne
 
 				getindex = 0;
 
-				if( pd_data.u32_NumSets>0 )
+				if( UpPrintSets::getInstance()->GetPrintSetsAvail()>0 )
 					getstate = PDRS_SET_NAME;
 				else
 					getstate = PDRS_6;
@@ -235,8 +235,8 @@ uint32_t UpPrinterData::GetPrinterDataEmulation(unsigned char* pDataOut, unsigne
 			{
 				memcpy( pDataOut, ((unsigned char*)UpPrintSets::getInstance()->GetPrintSet(getindex))+16+60, 60 );
 
-				getindex--;
-				if( getindex>0 )
+				getindex++;
+				if( getindex < UpPrintSets::getInstance()->GetPrintSetsAvail() )
 					getstate = PDRS_SET_NAME;
 				else
 					getstate = PDRS_6;

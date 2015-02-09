@@ -94,6 +94,7 @@ public:
 					  float OP6
 					);
 
+	unsigned int GetPrintSetsAvail();
 	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index);
 
 private:
