@@ -79,7 +79,9 @@ bool UpPrintSets::AddPrintSet(char set_name[16], float nozzle_diameter,
 	print_sets[print_sets_valid].other_param_4 = OP4;
 	print_sets[print_sets_valid].other_param_5 = OP5;
 	print_sets[print_sets_valid].other_param_6 = OP6;
+
 	Core::PrinterSettings::getInstance()->updatePrintSet(print_sets_valid, &print_sets[print_sets_valid]);
+
 	print_sets_valid++;
 
 	return true;
@@ -93,11 +95,6 @@ UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index)
 	return NULL;
 }
 
-unsigned int UpPrintSets::GetPrintSetData(unsigned char** ppSetData)
-{
-	*ppSetData = (unsigned char*)print_sets;
-	return print_sets_valid;
-}
 
 void UpPrintSets::ResetPrintSets() {
 	print_sets_valid = 0;

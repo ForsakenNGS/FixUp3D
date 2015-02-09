@@ -95,7 +95,6 @@ public:
 					);
 
 	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index);
-	unsigned int GetPrintSetData( unsigned char** ppSetData );
 
 private:
     static UpPrintSets   *instance;
