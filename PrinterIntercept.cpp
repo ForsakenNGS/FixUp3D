@@ -5,6 +5,8 @@
  *      Author: Forsaken
  */
 
+//#define DEBUG_MEMWRITE
+
 #include "PrinterIntercept.h"
 #include "PrinterSettings.h"
 #include "UpPrinterData.h"
@@ -509,20 +511,20 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 		break;
 		default:
 		{
+		#ifdef DEBUG_MEMWRITE
 			log->writeString("[WriteMem] Unknown MemBlock: ")->writeBinaryBuffer(memBlock, sizeof(FixUp3DMemBlock))->writeString("\r\n");
+		#endif
 		}
 		break;
 	}
 }
 
 void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) {
-	PrinterSettings*	settings = PrinterSettings::getInstance();
-	ULONG				paramType = params.longs.lParam1;
+		ULONG				paramType = params.longs.lParam1;
 	switch (paramType) {
 		case FIXUP3D_MEM_PARAM_LAYER:
 		{
 			memCurrentLayer = params.longs.lParam2;
-
 		}
 		break;
 		case FIXUP3D_MEM_PARAM_NOZZLE1_TEMP:
@@ -531,6 +533,7 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 			if (temperatureNozzle1Base == 0) {
 				temperatureNozzle1Base = temperature;
 			}
+			PrinterSettings*	settings = PrinterSettings::getInstance();
 			settings->setHeaterTemperature(temperature, false);
 			ULONG TargetTemperature = settings->getHeaterTemperature() + (temperature - temperatureNozzle1Base);
 			if (TargetTemperature != temperature) {
@@ -542,7 +545,9 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 		break;
 		default:
 		{
+		#ifdef DEBUG_MEMWRITE
 			log->writeString("[WriteMem] Unknown MemBlock Parameter: ")->writeBinaryBuffer(&params, sizeof(FixUp3DMemBlockParams))->writeString("\r\n");
+		#endif
 		}
 		break;
 	}
