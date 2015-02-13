@@ -10,7 +10,6 @@
 
 #include <Windows.h>
 #include <commctrl.h>
-#include <wx/wx.h>
 #include "winusbhelper.h"
 #include "UpPrintSets.h"
 
@@ -55,7 +54,7 @@ struct PrinterSettingsStruct {
 	BOOL		preheatDelay;
 };
 
-class PrinterSettings : public wxApp {
+class PrinterSettings {
 private:
     static PrinterSettings			*instance;
 
