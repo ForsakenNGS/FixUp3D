@@ -29,8 +29,7 @@ PrinterIntercept* PrinterIntercept::getInstance() {
 
 PrinterIntercept::PrinterIntercept() {
 	customCommandsSending = false;
-	preheatDone = false;
-	preheatPrintAgainAfter = false;
+	preheatStatus = FIXUP3D_PREHEAT_DISABLED;
 	// Initialize log writer
 	TCHAR sHomeDir[MAX_PATH];
 	TCHAR sFilename[MAX_PATH];
@@ -222,8 +221,8 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
 			temperatureNozzle1Base = argLong;
-			settings->setHeaterTemperature(argLong, false);
-			ULONG TargetTemperature = settings->getHeaterTemperature();
+			settings->setHeaterTemperature(3, argLong, false);
+			ULONG TargetTemperature = settings->getHeaterTemperature(3);
 			if (TargetTemperature != argLong) {
 				// Override temperature!
 				log->writeString("[SetNozzle1Temp] Overriding Temperature: ")->writeLong(argLong)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
@@ -352,14 +351,24 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_PREHEAT_TIMER:
 		{
 			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-second units
+			if (!settings->getPreheatDelayPrint()) {
+				preheatStatus = FIXUP3D_PREHEAT_DISABLED;
+			} else if ((preheatStatus == FIXUP3D_PREHEAT_DISABLED) && settings->getPreheatDelayPrint()) {
+				preheatStatus = FIXUP3D_PREHEAT_IDLE;
+			}
 			settings->updatePreheatTimer(result);
 			settings->updateWindowTitle();
 			log->writeString("[GetPreheatTimer] Result: ")->writeLong(result)->writeString("\r\n");
-			if (result > 1) {
-				if ((result < 5) && preheatPrintAgainAfter) {
-					preheatDone = true;
-					preheatPrintAgainAfter = false;
+			if (result == 0) {
+				// Not heating
+				if (preheatStatus == FIXUP3D_PREHEAT_HEATING) {
+					preheatStatus = FIXUP3D_PREHEAT_PRINTING;
 					printAgain();
+				}
+			} else if (result > 1) {
+				// Preheat cooldown running
+				if (preheatStatus == FIXUP3D_PREHEAT_STOPPING) {
+					preheatStatus = FIXUP3D_PREHEAT_HEATING;
 				}
 			}
 			break;
@@ -391,20 +400,23 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 				case 2:
 					// Wait until prheat is done?
 					if (printerStatus == FIXUP3D_STATUS_PRINTING) {
-						if (!preheatDone && settings->getPreheatDelayPrint()) {
+						if (preheatStatus == FIXUP3D_PREHEAT_IDLE) {
+							preheatStatus = FIXUP3D_PREHEAT_STOPPING;
 							// Weit until beeping stopped
 							addCustomCommandDelay(5000);
 							// Send stop command to printer in order to prevent starting the print job
 							stopPrint();
-							preheatDone = true;
-							preheatPrintAgainAfter = true;
 							// Wait until print was stopped...
 							addCustomCommandDelay(6000);
 							// ... then start the preheat timer ...
 							setPreheatTimer(settings->getPreheatTime());
+						} else if (preheatStatus == FIXUP3D_PREHEAT_HEATING) {
+							preheatStatus = FIXUP3D_PREHEAT_PRINTING;
 						}
-					} else if (!preheatPrintAgainAfter) {
-						preheatDone = false;
+					} else {
+						if (preheatStatus == FIXUP3D_PREHEAT_PRINTING) {
+							preheatStatus = FIXUP3D_PREHEAT_IDLE;
+						}
 					}
 					break;
 			}
@@ -534,8 +546,8 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 				temperatureNozzle1Base = temperature;
 			}
 			PrinterSettings*	settings = PrinterSettings::getInstance();
-			settings->setHeaterTemperature(temperature, false);
-			ULONG TargetTemperature = settings->getHeaterTemperature() + (temperature - temperatureNozzle1Base);
+			settings->setHeaterTemperature(memCurrentLayer, temperature, false);
+			ULONG TargetTemperature = settings->getHeaterTemperature(memCurrentLayer);
 			if (TargetTemperature != temperature) {
 				// Override temperature!
 				log->writeString("[WriteMem] Overriding Temperature: ")->writeLong(temperature)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");

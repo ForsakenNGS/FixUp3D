@@ -19,6 +19,9 @@ namespace Core {
 
 PrinterSettings* PrinterSettings::instance = 0;
 
+COLORREF  backgroundEditChanged = RGB(255,255,128);
+COLORREF  backgroundEditDefault = RGB(128,255,128);
+
 PrinterSettings* PrinterSettings::getInstance() {
 	if (instance == 0) {
 		// TODO: Proper exception
@@ -39,18 +42,26 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hInstDll = hInstance;
 	hWindow = NULL;
 	hUsbInterface = NULL;
+	lPreheatTimer = 0;
 	iPrintSetIndex = 0;
 	iPrintSetCount = 0;
 	// Current setup
-	settings.heaterTemp = 0;
-	settings.heaterTempOverride = false;
+	settings.heaterTemp1 = 0;
+	settings.heaterTemp2 = 0;
+	settings.heaterTemp3 = 0;
+	settings.heaterTempOverride1 = false;
+	settings.heaterTempOverride2 = false;
+	settings.heaterTempOverride3 = false;
 	// Window elements
 	hLabelHeaterTemp = NULL;
-	hEditHeaterTemp = NULL;
-	hCheckHeaterTemp = NULL;
+	hLabelHeaterTemp1 = NULL;
+	hLabelHeaterTemp2 = NULL;
+	hLabelHeaterTemp3 = NULL;
+	hEditHeaterTemp1 = NULL;
+	hEditHeaterTemp2 = NULL;
+	hEditHeaterTemp3 = NULL;
 	hLabelPreheatTime = NULL;
 	hEditPreheatTime = NULL;
-	hCheckPreheatTime = NULL;
 	hButtonSetTemp = NULL;
 	hButtonStopPrint = NULL;
 	hButtonPrintAgain = NULL;
@@ -104,16 +115,19 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 		case WM_CREATE:
 		{
 			// Create elements
-			hLabelHeaterTemp = CreateWindow("Static", "Heater Temp. (°C)", WS_CHILD|WS_VISIBLE, 4, 4, 160, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
-			hEditHeaterTemp = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 4, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP, hInstDll, 0);
-			hCheckHeaterTemp = CreateWindow("Button", "Override", BS_CHECKBOX|WS_CHILD|WS_VISIBLE, 260, 4, 128, 22, hWnd, (HMENU)IDC_CHECK_HEATER_TEMP, hInstDll, 0);
-			hLabelPreheatTime = CreateWindow("Static", "Preheat Timer (Min)", WS_CHILD|WS_VISIBLE, 4, 32, 160, 22, hWnd, (HMENU)IDC_LABEL_PREHEAT_TIME, hInstDll, 0);
-			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
-			hCheckPreheatTime = CreateWindow("Button", "Delay print job", BS_CHECKBOX|WS_CHILD|WS_VISIBLE, 260, 32, 128, 22, hWnd, (HMENU)IDC_CHECK_PREHEAT_TIME, hInstDll, 0);
-			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE, 4, 60, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
-			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE, 88, 60, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
-			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE, 172, 60, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
-			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE, 0, 92, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
+			hLabelHeaterTemp = CreateWindow("Static", "Heater Temp. (°C)", WS_CHILD|WS_VISIBLE, 4, 32, 160, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
+			hLabelHeaterTemp1 = CreateWindow("Static", "Layer 1", WS_CHILD|WS_VISIBLE, 172, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
+			hLabelHeaterTemp2 = CreateWindow("Static", "Layer 2", WS_CHILD|WS_VISIBLE, 260, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
+			hLabelHeaterTemp3 = CreateWindow("Static", "Layer 3+", WS_CHILD|WS_VISIBLE, 348, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
+			hEditHeaterTemp1 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP1, hInstDll, 0);
+			hEditHeaterTemp2 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 260, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP2, hInstDll, 0);
+			hEditHeaterTemp3 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 348, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP3, hInstDll, 0);
+			hLabelPreheatTime = CreateWindow("Static", "Preheat Timer (Min)", WS_CHILD|WS_VISIBLE, 4, 60, 160, 22, hWnd, (HMENU)IDC_LABEL_PREHEAT_TIME, hInstDll, 0);
+			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 60, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
+			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE, 4, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
+			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE, 88, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
+			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE, 172, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
+			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE, 0, 120, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
 			// Print sets elements
 			hLabelNozzleDiameter = CreateWindow("Static", "Nozzle Diameter", WS_CHILD|WS_VISIBLE, 4, 32, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
 			hEditNozzleDiameter = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 32, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_NOZZLE_DIAMETER, hInstDll, 0);
@@ -163,6 +177,24 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			readSettingsFromConfig(hWnd);
 			break;
 		}
+		case WM_CTLCOLOREDIT:
+		{
+			HDC		hdc = (HDC)wParam;
+			HWND	hWndEdit = (HWND)lParam;
+			if (hWndEdit == hEditHeaterTemp1) {
+				SetBkColor(hdc, (settings.heaterTempOverride1 ? backgroundEditChanged : backgroundEditDefault));
+			}
+			if (hWndEdit == hEditHeaterTemp2) {
+				SetBkColor(hdc, (settings.heaterTempOverride2 ? backgroundEditChanged : backgroundEditDefault));
+			}
+			if (hWndEdit == hEditHeaterTemp3) {
+				SetBkColor(hdc, (settings.heaterTempOverride3 ? backgroundEditChanged : backgroundEditDefault));
+			}
+			if (hWndEdit == hEditPreheatTime) {
+				SetBkColor(hdc, (settings.preheatDelay ? backgroundEditChanged : backgroundEditDefault));
+			}
+		    return (LRESULT)GetStockObject(HOLLOW_BRUSH);
+		}
 		case WM_NOTIFY:
 		{
 			LPNMHDR notification = (LPNMHDR)lParam;
@@ -192,29 +224,9 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			MessageBox(NULL, debug, "FixUp3D", NULL);
 			*/
 			if (HIWORD(wParam) == BN_CLICKED) {
-				if (LOWORD(wParam) == IDC_CHECK_HEATER_TEMP) {
-					// Heater temp override changed
-					BOOL			newOverride = !IsDlgButtonChecked(hWnd, IDC_CHECK_HEATER_TEMP);
-					if (newOverride) {
-						CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, BST_CHECKED);
-					} else {
-						CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, BST_UNCHECKED);
-					}
-					settings.heaterTempOverride = newOverride;
-				}
-				if (LOWORD(wParam) == IDC_CHECK_PREHEAT_TIME) {
-					// Heater temp override changed
-					BOOL			newDelay = !IsDlgButtonChecked(hWnd, IDC_CHECK_PREHEAT_TIME);
-					if (newDelay) {
-						CheckDlgButton(hWnd, IDC_CHECK_PREHEAT_TIME, BST_CHECKED);
-					} else {
-						CheckDlgButton(hWnd, IDC_CHECK_PREHEAT_TIME, BST_UNCHECKED);
-					}
-					settings.preheatDelay = newDelay;
-				}
 				if (LOWORD(wParam) == IDC_BUTTON_SET_TEMP) {
 					// Manual temperature set requested
-					PrinterIntercept::getInstance()->setNozzle1Temp( settings.heaterTemp );
+					PrinterIntercept::getInstance()->setNozzle1Temp( settings.heaterTemp3 );
 				}
 				if (LOWORD(wParam) == IDC_BUTTON_STOP_PRINT) {
 					// Stop the current print job
@@ -239,33 +251,77 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 						}
 					}
 				}
-				if (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP) {
+				if ((LOWORD(wParam) == IDC_INPUT_HEATER_TEMP1) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP2) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP3)) {
 					// Heater temp changed
 					ULONG			newHeaterTemp = 0;
-					GetWindowTextA(hEditHeaterTemp, tmpInputText, 32);
-					stream << tmpInputText << flush;
-					stream >> newHeaterTemp;
-					if (newHeaterTemp != settings.heaterTemp) {
-						// Temperature changed
-						if ((newHeaterTemp > 30) && (newHeaterTemp < 300)) {
-							setHeaterTemperature(newHeaterTemp);
-							// Set override if not already done
-							CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, BST_CHECKED);
-						} else {
-							// Invalid input, disable override if active
-							if (settings.heaterTempOverride) {
-								settings.heaterTempOverride = false;
-								CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, BST_UNCHECKED);
+					USHORT			iLayer = 0;
+					HWND			hWndHeaterTemp = NULL;
+					WINBOOL*		pOverride = NULL;
+					ULONG*			pHeaterTemp = NULL;
+					// Get changed edit hwnd
+					switch (LOWORD(wParam)) {
+						case IDC_INPUT_HEATER_TEMP1:
+							iLayer = 1;
+							hWndHeaterTemp = hEditHeaterTemp1;
+							pHeaterTemp = &settings.heaterTemp1;
+							pOverride = &settings.heaterTempOverride1;
+							break;
+						case IDC_INPUT_HEATER_TEMP2:
+							iLayer = 2;
+							hWndHeaterTemp = hEditHeaterTemp2;
+							pHeaterTemp = &settings.heaterTemp2;
+							pOverride = &settings.heaterTempOverride1;
+							break;
+						case IDC_INPUT_HEATER_TEMP3:
+							iLayer = 3;
+							hWndHeaterTemp = hEditHeaterTemp3;
+							pHeaterTemp = &settings.heaterTemp3;
+							pOverride = &settings.heaterTempOverride1;
+							break;
+					}
+					// Get new text
+					GetWindowTextA(hWndHeaterTemp, tmpInputText, 32);
+					if (strcmp(tmpInputText, "") == 0) {
+						// Disable!
+						*pOverride = false;
+					} else {
+						stream << tmpInputText << flush;
+						stream >> newHeaterTemp;
+						if (newHeaterTemp != *pHeaterTemp) {
+							// Temperature changed
+							if ((newHeaterTemp > 80) && (newHeaterTemp < 300)) {
+								setHeaterTemperature(iLayer, newHeaterTemp);
+							} else {
+								// Invalid input, disable override if active
+								if (*pOverride) {
+									*pOverride = false;
+								}
 							}
 						}
 					}
+					// Redraw input
+				    InvalidateRect(hWndHeaterTemp, 0, 1);
 				}
 				if (LOWORD(wParam) == IDC_INPUT_PREHEAT_TIME) {
 					UINT preheatMinutes = 0;
 					GetWindowTextA(hEditPreheatTime, tmpInputText, 32);
-					stream << tmpInputText << flush;
-					stream >> preheatMinutes;
-					settings.preheatTime = preheatMinutes * 30;
+					if (strcmp(tmpInputText, "") == 0) {
+						// Disable!
+						settings.preheatTime = 0;
+						settings.preheatDelay = false;
+					} else {
+						stream << tmpInputText << flush;
+						stream >> preheatMinutes;
+						if (preheatMinutes > 0) {
+							settings.preheatTime = preheatMinutes * 30;
+							settings.preheatDelay = true;
+						} else {
+							settings.preheatTime = 0;
+							settings.preheatDelay = false;
+						}
+					}
+					// Redraw input
+				    InvalidateRect(hEditPreheatTime, 0, 1);
 				}
 				delete[] tmpInputText;
 			}
@@ -278,8 +334,18 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-USHORT PrinterSettings::getHeaterTemperature() {
-	return settings.heaterTemp;
+USHORT PrinterSettings::getHeaterTemperature(USHORT layer) {
+	switch (layer) {
+		case 0:
+		case 1:
+			return settings.heaterTemp1;
+		case 2:
+			return settings.heaterTemp2;
+		case 3:
+		default:
+			return settings.heaterTemp3;
+	}
+	return 0;
 }
 
 ULONG PrinterSettings::getPreheatTime() {
@@ -294,25 +360,47 @@ void PrinterSettings::setHWnd(HWND hWnd) {
 	hWindow = hWnd;
 }
 
-void PrinterSettings::setHeaterTemperature(USHORT newTemp) {
-	setHeaterTemperature(newTemp, true);
+void PrinterSettings::setHeaterTemperature(USHORT layer, USHORT newTemp) {
+	setHeaterTemperature(layer, newTemp, true);
 }
 
-void PrinterSettings::setHeaterTemperature(USHORT newTemp, BOOL override) {
-	if (override || !settings.heaterTempOverride) {
+void PrinterSettings::setHeaterTemperature(USHORT layer, USHORT newTemp, BOOL override) {
+	WINBOOL* 	pHeaterOverride = NULL;
+	ULONG*		pHeaterTemp = NULL;
+	HWND		hHeaterTempEdit = NULL;
+	switch (layer) {
+		case 0:
+		case 1:
+			pHeaterTemp = &settings.heaterTemp1;
+			pHeaterOverride = &settings.heaterTempOverride1;
+			hHeaterTempEdit = hEditHeaterTemp1;
+			break;
+		case 2:
+			pHeaterTemp = &settings.heaterTemp2;
+			pHeaterOverride = &settings.heaterTempOverride2;
+			hHeaterTempEdit = hEditHeaterTemp2;
+			break;
+		case 3:
+		default:
+			pHeaterTemp = &settings.heaterTemp3;
+			pHeaterOverride = &settings.heaterTempOverride3;
+			hHeaterTempEdit = hEditHeaterTemp3;
+			break;
+	}
+	if (override || !*pHeaterOverride) {
 		// No custom temperature is set / Setting new custom temperature
-		settings.heaterTemp = newTemp;
+		*pHeaterTemp = newTemp;
 		if (!override) {
 			CHAR* cHeaterTemp = new CHAR[16];
-			sprintf(cHeaterTemp, "%lu", settings.heaterTemp);
+			sprintf(cHeaterTemp, "%lu", *pHeaterTemp);
 			// Update input field
-			SetWindowText(hEditHeaterTemp, cHeaterTemp);
+			SetWindowText(hHeaterTempEdit, cHeaterTemp);
 			// Cleanup
 			delete[] cHeaterTemp;
 		}
 	}
 	// Set override flag if required
-	settings.heaterTempOverride = (override ? true : settings.heaterTempOverride);
+	*pHeaterOverride = (override ? true : *pHeaterOverride);
 }
 
 void PrinterSettings::setPreheatTimer(ULONG preheatSeconds) {
@@ -350,12 +438,19 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 				if (ReadFile(hFile, &settings, sizeof(settings), &dwBytesRead, NULL)) {
 					// Success!
 					CHAR* cInputText = new CHAR[16];
-					sprintf(cInputText, "%lu", settings.heaterTemp);
-					SetWindowTextA(hEditHeaterTemp, cInputText);
+					sprintf(cInputText, "%lu", settings.heaterTemp1);
+					SetWindowTextA(hEditHeaterTemp1, cInputText);
+					sprintf(cInputText, "%lu", settings.heaterTemp2);
+					SetWindowTextA(hEditHeaterTemp2, cInputText);
+					sprintf(cInputText, "%lu", settings.heaterTemp3);
+					SetWindowTextA(hEditHeaterTemp3, cInputText);
 					sprintf(cInputText, "%lu", settings.preheatTime / 30);
 					SetWindowTextA(hEditPreheatTime, cInputText);
-					CheckDlgButton(hWnd, IDC_CHECK_HEATER_TEMP, (settings.heaterTempOverride ? BST_CHECKED : BST_UNCHECKED));
-					CheckDlgButton(hWnd, IDC_CHECK_PREHEAT_TIME, (settings.preheatDelay ? BST_CHECKED : BST_UNCHECKED));
+					// Redraw
+				    InvalidateRect(hEditHeaterTemp1, 0, 1);
+				    InvalidateRect(hEditHeaterTemp2, 0, 1);
+				    InvalidateRect(hEditHeaterTemp3, 0, 1);
+				    InvalidateRect(hEditPreheatTime, 0, 1);
 				} else {
 					// TODO: Error
 				}
@@ -368,7 +463,9 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 }
 
 void PrinterSettings::resetHeaterTemperature() {
-	settings.heaterTempOverride = false;
+	settings.heaterTempOverride1 = false;
+	settings.heaterTempOverride2 = false;
+	settings.heaterTempOverride3 = false;
 }
 
 void PrinterSettings::updatePreheatTimer(ULONG newTime) {

@@ -104,11 +104,17 @@ namespace Core {
 #define FIXUP3D_CMD_PAUSE				UPCMD(0xFF,0x01)
 
 // Printer status values
-#define FIXUP3D_STATUS_UNKNOWN0			0x01
+#define FIXUP3D_STATUS_UNKNOWN0			0x00
 #define FIXUP3D_STATUS_INITIALIZED		0x01
 #define FIXUP3D_STATUS_PRINTING			0x02
 #define FIXUP3D_STATUS_UNKNOWN3			0x03
 #define FIXUP3D_STATUS_UNKNOWN7			0x07
+// Preheat states
+#define FIXUP3D_PREHEAT_DISABLED		0x00
+#define FIXUP3D_PREHEAT_IDLE			0x01
+#define FIXUP3D_PREHEAT_STOPPING		0x02
+#define FIXUP3D_PREHEAT_HEATING			0x03
+#define FIXUP3D_PREHEAT_PRINTING		0x04
 // Custom states for the
 #define FIXUP3D_REPLY_DONT_INTERCEPT	0x0000
 #define FIXUP3D_REPLY_ACKNOWLEDGED		0x0001
@@ -169,13 +175,12 @@ private:
 	ULONG					lastWriteCustom;
 	BOOL					lastWriteKeep;
 
-	BOOL					preheatDone;
-	BOOL					preheatPrintAgainAfter;
 	ULONG					temperatureNozzle1Base;
 	ULONG					temperatureNozzle2Base;
 	ULONG					temperatureNozzle3Base;
 
 	ULONG					printerStatus;
+	ULONG					preheatStatus;
 	ULONG					memCurrentLayer;
 
 	void	addCustomCommand(FixUp3DCustomCommand &command);
