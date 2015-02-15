@@ -519,7 +519,7 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
 						case IDC_INPUT_SUPPORT_WIDTH:
 							GetWindowTextA(hEditSupportWidth, tmpInputText, 32);
 							stream << tmpInputText << flush;
-							stream >> printSet->nozzle_diameter;
+							stream >> printSet->support_width;
 							break;
 						case IDC_INPUT_SUPPORT_SPACE:
 							GetWindowTextA(hEditSupportSpace, tmpInputText, 32);
