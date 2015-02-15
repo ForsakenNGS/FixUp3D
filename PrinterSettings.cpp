@@ -103,6 +103,8 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hEditSupportScale = NULL;
 	hLabelFeedScale = NULL;
 	hEditFeedScale = NULL;
+
+	origWndProc = NULL;
 }
 
 PrinterSettings::~PrinterSettings() {
@@ -119,60 +121,62 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			hLabelHeaterTemp1 = CreateWindow("Static", "Layer 1", WS_CHILD|WS_VISIBLE, 172, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
 			hLabelHeaterTemp2 = CreateWindow("Static", "Layer 2", WS_CHILD|WS_VISIBLE, 260, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
 			hLabelHeaterTemp3 = CreateWindow("Static", "Layer 3+", WS_CHILD|WS_VISIBLE, 348, 4, 80, 22, hWnd, (HMENU)IDC_LABEL_HEATER_TEMP, hInstDll, 0);
-			hEditHeaterTemp1 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP1, hInstDll, 0);
-			hEditHeaterTemp2 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 260, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP2, hInstDll, 0);
-			hEditHeaterTemp3 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 348, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP3, hInstDll, 0);
+			hEditHeaterTemp1 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP1, hInstDll, 0);
+			hEditHeaterTemp2 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 260, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP2, hInstDll, 0);
+			hEditHeaterTemp3 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 348, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP3, hInstDll, 0);
 			hLabelPreheatTime = CreateWindow("Static", "Preheat Timer (Min)", WS_CHILD|WS_VISIBLE, 4, 60, 160, 22, hWnd, (HMENU)IDC_LABEL_PREHEAT_TIME, hInstDll, 0);
-			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 172, 60, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
-			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE, 4, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
-			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE, 88, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
-			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE, 172, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
-			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE, 0, 120, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
+			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 60, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
+			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 4, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
+			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 88, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
+			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
+			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE|WS_TABSTOP, 0, 120, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
+			origWndProc = (WNDPROC)SetWindowLongPtr( hTabPrinterSets, GWLP_WNDPROC, (LONG_PTR)PrinterSetTabWndProc);
+
 			// Print sets elements
 			hLabelNozzleDiameter = CreateWindow("Static", "Nozzle Diameter", WS_CHILD|WS_VISIBLE, 4, 32, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditNozzleDiameter = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 32, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_NOZZLE_DIAMETER, hInstDll, 0);
+			hEditNozzleDiameter = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 32, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_NOZZLE_DIAMETER, hInstDll, 0);
 			hLabelLayerThickness = CreateWindow("Static", "Layer Thickness", WS_CHILD|WS_VISIBLE, 240, 32, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditLayerThickness = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 32, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_LAYER_THICKNESS, hInstDll, 0);
+			hEditLayerThickness = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 32, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_LAYER_THICKNESS, hInstDll, 0);
 
 			hLabelScanWidth = CreateWindow("Static", "Scan Width", WS_CHILD|WS_VISIBLE, 4, 56, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditScanWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 56, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_WIDTH, hInstDll, 0);
+			hEditScanWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 56, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_WIDTH, hInstDll, 0);
 			hLabelScanTimes = CreateWindow("Static", "Scan Times", WS_CHILD|WS_VISIBLE, 240, 56, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditScanTimes = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 56, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_TIMES, hInstDll, 0);
+			hEditScanTimes = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 56, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_TIMES, hInstDll, 0);
 
 			hLabelHatchWidth = CreateWindow("Static", "Hatch Width", WS_CHILD|WS_VISIBLE, 4, 80, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditHatchWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 80, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_WIDTH, hInstDll, 0);
+			hEditHatchWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 80, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_WIDTH, hInstDll, 0);
 			hLabelHatchSpace = CreateWindow("Static", "Hatch Space", WS_CHILD|WS_VISIBLE, 240, 80, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditHatchSpace = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 80, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SPACE, hInstDll, 0);
+			hEditHatchSpace = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 80, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SPACE, hInstDll, 0);
 
 			hLabelHatchLayer = CreateWindow("Static", "Hatch Layer", WS_CHILD|WS_VISIBLE, 4, 104, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditHatchLayer = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 104, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_LAYER, hInstDll, 0);
+			hEditHatchLayer = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 104, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_LAYER, hInstDll, 0);
 			hLabelSupportWidth = CreateWindow("Static", "Support Width", WS_CHILD|WS_VISIBLE, 240, 104, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditSupportWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 104, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_WIDTH, hInstDll, 0);
+			hEditSupportWidth = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 104, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_WIDTH, hInstDll, 0);
 
 			hLabelSupportSpace = CreateWindow("Static", "Support Space", WS_CHILD|WS_VISIBLE, 4, 128, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditSupportSpace = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 128, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SPACE, hInstDll, 0);
+			hEditSupportSpace = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 128, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SPACE, hInstDll, 0);
 			hLabelSupportLayer = CreateWindow("Static", "Support Layer", WS_CHILD|WS_VISIBLE, 240, 128, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditSupportLayer = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 128, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_LAYER, hInstDll, 0);
+			hEditSupportLayer = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 128, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_LAYER, hInstDll, 0);
 
 			hLabelScanSpeed = CreateWindow("Static", "Scan Speed", WS_CHILD|WS_VISIBLE, 4, 152, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditScanSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 152, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_SPEED, hInstDll, 0);
+			hEditScanSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 152, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_SPEED, hInstDll, 0);
 			hLabelHatchSpeed = CreateWindow("Static", "Hatch Speed", WS_CHILD|WS_VISIBLE, 240, 152, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditHatchSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 152, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SPEED, hInstDll, 0);
+			hEditHatchSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 152, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SPEED, hInstDll, 0);
 
 			hLabelSupportSpeed = CreateWindow("Static", "Support Speed", WS_CHILD|WS_VISIBLE, 4, 176, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditSupportSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 176, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SPEED, hInstDll, 0);
+			hEditSupportSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 176, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SPEED, hInstDll, 0);
 			hLabelJumpSpeed = CreateWindow("Static", "Jump Speed", WS_CHILD|WS_VISIBLE, 240, 176, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditJumpSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 176, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_JUMP_SPEED, hInstDll, 0);
+			hEditJumpSpeed = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 176, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_JUMP_SPEED, hInstDll, 0);
 
 			hLabelScanScale = CreateWindow("Static", "Scan Scale", WS_CHILD|WS_VISIBLE, 4, 200, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditScanScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 200, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_SCALE, hInstDll, 0);
+			hEditScanScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 200, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SCAN_SCALE, hInstDll, 0);
 			hLabelHatchScale = CreateWindow("Static", "Hatch Scale", WS_CHILD|WS_VISIBLE, 240, 200, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditHatchScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 200, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SCALE, hInstDll, 0);
+			hEditHatchScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 200, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_HATCH_SCALE, hInstDll, 0);
 
 			hLabelSupportScale = CreateWindow("Static", "Support Scale", WS_CHILD|WS_VISIBLE, 4, 224, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditSupportScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 156, 224, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SCALE, hInstDll, 0);
+			hEditSupportScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 156, 224, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_SUPPORT_SCALE, hInstDll, 0);
 			hLabelFeedScale = CreateWindow("Static", "Feed Scale", WS_CHILD|WS_VISIBLE, 240, 224, 144, 22, hTabPrinterSets, NULL, hInstDll, 0);
-			hEditFeedScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE, 384, 224, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_FEED_SCALE, hInstDll, 0);
+			hEditFeedScale = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 384, 224, 80, 22, hTabPrinterSets, (HMENU)IDC_INPUT_FEED_SCALE, hInstDll, 0);
 			// Read config
 			readSettingsFromConfig(hWnd);
 			break;
@@ -240,17 +244,6 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			if (HIWORD(wParam) == EN_CHANGE) {
 				CHAR*			tmpInputText = new CHAR[32];
 				stringstream 	stream;
-				if ((LOWORD(wParam) & 0xF00) == 0x600) {
-					// Printer set input field
-					UP_PRINT_SET_STRUCT* printSet = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex);
-					if (printSet != NULL) {
-						if (LOWORD(wParam) == IDC_INPUT_NOZZLE_DIAMETER) {
-							GetWindowTextA(hEditNozzleDiameter, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->nozzle_diameter;
-						}
-					}
-				}
 				if ((LOWORD(wParam) == IDC_INPUT_HEATER_TEMP1) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP2) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP3)) {
 					// Heater temp changed
 					ULONG			newHeaterTemp = 0;
@@ -470,6 +463,121 @@ void PrinterSettings::resetHeaterTemperature() {
 
 void PrinterSettings::updatePreheatTimer(ULONG newTime) {
 	lPreheatTimer = newTime;
+}
+
+LRESULT CALLBACK PrinterSettings::PrinterSetTabWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	return Core::PrinterSettings::getInstance()->handlePrintSetTabWndMessage(hWnd, message, wParam, lParam);
+}
+
+LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch(message)
+	{
+		case WM_COMMAND:
+			if (HIWORD(wParam) == EN_CHANGE) {
+				CHAR*			tmpInputText = new CHAR[32];
+				stringstream 	stream;
+				UP_PRINT_SET_STRUCT* printSet = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex);
+				if (printSet != NULL) {
+					switch( LOWORD(wParam) )
+					{
+						case IDC_INPUT_NOZZLE_DIAMETER:
+							GetWindowTextA(hEditNozzleDiameter, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->nozzle_diameter;
+							break;
+						case IDC_INPUT_LAYER_THICKNESS:
+							GetWindowTextA(hEditLayerThickness, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->layer_thickness;
+							break;
+						case IDC_INPUT_SCAN_WIDTH:
+							GetWindowTextA(hEditScanWidth, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->scan_width;
+							break;
+						case IDC_INPUT_SCAN_TIMES:
+							GetWindowTextA(hEditScanTimes, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->scan_times;
+							break;
+						case IDC_INPUT_HATCH_WIDTH:
+							GetWindowTextA(hEditHatchWidth, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->hatch_width;
+							break;
+						case IDC_INPUT_HATCH_SPACE:
+							GetWindowTextA(hEditHatchSpace, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->hatch_space;
+							break;
+						case IDC_INPUT_HATCH_LAYER:
+							GetWindowTextA(hEditHatchLayer, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->hatch_layer;
+							break;
+						case IDC_INPUT_SUPPORT_WIDTH:
+							GetWindowTextA(hEditSupportWidth, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->nozzle_diameter;
+							break;
+						case IDC_INPUT_SUPPORT_SPACE:
+							GetWindowTextA(hEditSupportSpace, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->support_space;
+							break;
+						case IDC_INPUT_SUPPORT_LAYER:
+							GetWindowTextA(hEditSupportLayer, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->support_layer;
+							break;
+						case IDC_INPUT_SCAN_SPEED:
+							GetWindowTextA(hEditScanSpeed, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->scan_speed;
+							break;
+						case IDC_INPUT_HATCH_SPEED:
+							GetWindowTextA(hEditHatchSpeed, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->hatch_speed;
+							break;
+						case IDC_INPUT_SUPPORT_SPEED:
+							GetWindowTextA(hEditSupportSpeed, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->support_speed;
+							break;
+						case IDC_INPUT_JUMP_SPEED:
+							GetWindowTextA(hEditJumpSpeed, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->jump_speed;
+							break;
+						case IDC_INPUT_SCAN_SCALE:
+							GetWindowTextA(hEditScanScale, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->scan_scale;
+							break;
+						case IDC_INPUT_HATCH_SCALE:
+							GetWindowTextA(hEditHatchScale, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->hatch_scale;
+							break;
+						case IDC_INPUT_SUPPORT_SCALE:
+							GetWindowTextA(hEditSupportScale, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->support_scale;
+							break;
+						case IDC_INPUT_FEED_SCALE:
+							GetWindowTextA(hEditFeedScale, tmpInputText, 32);
+							stream << tmpInputText << flush;
+							stream >> printSet->feed_scale;
+							break;
+					}
+				}
+			}
+			break;
+	}
+
+    return CallWindowProc(origWndProc, hWnd, message, wParam, lParam);
 }
 
 void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet) {

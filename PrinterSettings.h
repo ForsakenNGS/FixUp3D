@@ -49,7 +49,7 @@
 #define IDC_INPUT_SUPPORT_SCALE		0x611
 #define IDC_INPUT_FEED_SCALE		0x612
 
-#define	PRINTER_SETTING_VERSION	0x0102
+#define	PRINTER_SETTING_VERSION	0x0103
 
 namespace Core {
 
@@ -62,6 +62,8 @@ struct PrinterSettingsStruct {
 	BOOL		heaterTempOverride3;
 	ULONG		preheatTime;
 	BOOL		preheatDelay;
+
+	UpPrintSets customPrintSets[4];
 };
 
 class PrinterSettings {
@@ -128,13 +130,18 @@ private:
 	HWND							hEditSupportScale;
 	HWND							hLabelFeedScale;
 	HWND							hEditFeedScale;
+
+	static LRESULT CALLBACK PrinterSetTabWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	WNDPROC origWndProc;
+
 public:
 	PrinterSettings(HINSTANCE hInstance);
 	virtual ~PrinterSettings();
 	static PrinterSettings* getInstance();
 	static PrinterSettings* getInstanceNew(HINSTANCE hInstance);
 
-	LRESULT	handleWndMessage(HWND hWnd, UINT message, WPARAM lParam, LPARAM wParam);
+	LRESULT	handleWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	LRESULT	handlePrintSetTabWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void	applyHeaterTemperature();
 	USHORT	getHeaterTemperature(USHORT layer);
