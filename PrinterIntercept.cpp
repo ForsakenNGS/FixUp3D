@@ -134,8 +134,21 @@ ULONG PrinterIntercept::handleUsbPreRead(WINUSB_INTERFACE_HANDLE interfaceHandle
 		{
 			buffer[0] = 0x06;
 			bytesWritten = 1;
-			break;
 		}
+		break;
+
+		case FIXUP3D_REPLY_CUSTOMPRINTERDATA:
+		{
+			bytesWritten = UpPrinterData::getInstance()->GetPrinterDataEmulation( buffer, bufferLength );
+
+			//in case we got valid data from the emulation we return and keep the state (to emulate more data)
+			if( bytesWritten>0 )
+			{
+				log->writeString("[GetPrinterParamEmulation] Result: ")->writeLong(bytesWritten)->writeString(" : ")->writeBinaryBuffer(buffer, bytesWritten)->writeString("\r\n");
+				return bytesWritten;
+			}
+		}
+		break;
 	}
 	interceptReply = FIXUP3D_REPLY_DONT_INTERCEPT;
 	return bytesWritten;
@@ -214,7 +227,15 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
 		{
-			UpPrinterData::getInstance()->PrinterDataReset();
+			//if we do not have print sets from real printer we initiate the real command, init play back of our sets otherwise
+			if( !UpPrinterData::getInstance()->PrinterDataAvalibale() )
+				UpPrinterData::getInstance()->PrinterDataReset();
+			else
+			{
+				UpPrinterData::getInstance()->PrinterDataEmulationInit();
+				interceptReply = FIXUP3D_REPLY_CUSTOMPRINTERDATA;
+				return false; //do not send the original USB command
+			}
 		}
 		break;
 
@@ -299,7 +320,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 	{
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
 		{
-			log->writeString("[GetPrinterParam] Result: ")->writeString("\r\n");
+			log->writeString("[GetPrinterParam] Result: ")->writeLong(lengthTransferred)->writeString(" : ")->writeBinaryBuffer(buffer, lengthTransferred)->writeString("\r\n");
 			lastWriteKeep = UpPrinterData::getInstance()->PrinterDataFromUpResponse(buffer,lengthTransferred);
 		}
 		break;
@@ -398,11 +419,11 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 			log->writeString("[GetUnknownStatus] Result: ")->writeLong(result)->writeString("\r\n");
 			switch (result) {
 				case 2:
-					// Wait until prheat is done?
+					// Wait until preheat is done?
 					if (printerStatus == FIXUP3D_STATUS_PRINTING) {
 						if (preheatStatus == FIXUP3D_PREHEAT_IDLE) {
 							preheatStatus = FIXUP3D_PREHEAT_STOPPING;
-							// Weit until beeping stopped
+							// Wait until beeping stopped
 							addCustomCommandDelay(5000);
 							// Send stop command to printer in order to prevent starting the print job
 							stopPrint();
