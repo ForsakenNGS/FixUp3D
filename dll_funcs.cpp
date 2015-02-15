@@ -382,7 +382,8 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		log->writeString(" => Success! Length transferred: ")->writeLong(*LengthTransferred)->writeString("\r\n");
 		//log->writeString("    Buffer sent: 0x")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
 #endif
-		return true;
+		*LengthTransferred = BufferLength;
+		return TRUE;
 	}
 	if( WinUsb_WritePipe( InterfaceHandle, PipeID, Buffer, BufferLength, LengthTransferred, Overlapped ) )
 	{
@@ -390,7 +391,7 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		log->writeString(" => Success! Length transferred: ")->writeLong(*LengthTransferred)->writeString("\r\n");
 		//log->writeString("    Buffer sent: 0x")->writeBinaryBuffer(Buffer, *LengthTransferred)->writeString("\r\n");
 #endif
-		return true;
+		return TRUE;
 	}
 	else
 	{
@@ -398,7 +399,7 @@ BOOL __stdcall WinUsb_Wrapper_WritePipe(
 		DWORD dwError = GetLastError();
 		log->writeString(" => Failed! Error code: 0x")->writeBinaryBuffer(&dwError, sizeof(DWORD))->writeString("\r\n");
 #endif
-		return false;
+		return FALSE;
 	}
 }
 
