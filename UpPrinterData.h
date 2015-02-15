@@ -74,6 +74,8 @@ public:
 	void PrinterDataReset();
 	bool PrinterDataFromUpResponse(unsigned char* pData, unsigned int len);
 
+	bool PrinterDataAvalibale();
+	void PrinterDataEmulationInit();
 	void GetPrinterDataEmulationReset();
 	uint32_t GetPrinterDataEmulation(unsigned char* pDataOut, unsigned int lenOutAvail);
 

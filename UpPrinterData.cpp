@@ -40,115 +40,120 @@ bool UpPrinterData::PrinterDataFromUpResponse(unsigned char* pData, unsigned int
 {
 	static unsigned char setdata[16+60+60];
 
-	switch( respstate )
+	for( ;; )
 	{
-		case PDRS_7:
+		switch( respstate )
 		{
-			if( (1 == len) && (7==pData[0]) )
-				respstate = PDRS_HDR_BLOB;
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
-
-		case PDRS_HDR_BLOB:
-		{
-			if( (sizeof(pd_header) == len) ) //28
+			case PDRS_7:
 			{
-				memcpy( &pd_header, pData, sizeof(pd_header) );
-				respstate = PDRS_NAME_BLOB;
+				if( (1 == len) && (7==pData[0]) )
+					respstate = PDRS_HDR_BLOB;
+				else
+					respstate = PDRS_ERROR;
 			}
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
+			break;
 
-		case PDRS_NAME_BLOB:
-		{
-			if( (sizeof(pd_name) == len) ) //63
+			case PDRS_HDR_BLOB:
 			{
-				memcpy( &pd_name, pData, sizeof(pd_name) );
-				respstate = PDRS_DATA_BLOB;
+				if( (sizeof(pd_header) == len) ) //28
+				{
+					memcpy( &pd_header, pData, sizeof(pd_header) );
+					respstate = PDRS_NAME_BLOB;
+				}
+				else
+					respstate = PDRS_ERROR;
 			}
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
+			break;
 
-		case PDRS_DATA_BLOB:
-		{
-			if( (sizeof(pd_data) == len) ) //56
+			case PDRS_NAME_BLOB:
 			{
-				memcpy( &pd_data, pData, sizeof(pd_data) );
-				printsetsexpected = pd_data.u32_NumSets;
-				respstate = PDRS_SET_NAME;
+				if( (sizeof(pd_name) == len) ) //63
+				{
+					memcpy( &pd_name, pData, sizeof(pd_name) );
+					respstate = PDRS_DATA_BLOB;
+				}
+				else
+					respstate = PDRS_ERROR;
 			}
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
+			break;
 
-		case PDRS_SET_NAME:
-		{
-			if( 0 == printsetsexpected )
+			case PDRS_DATA_BLOB:
 			{
-				respstate = PDRS_6;
+				if( (sizeof(pd_data) == len) ) //56
+				{
+					memcpy( &pd_data, pData, sizeof(pd_data) );
+					printsetsexpected = pd_data.u32_NumSets;
+					respstate = PDRS_SET_NAME;
+				}
+				else
+					respstate = PDRS_ERROR;
+			}
+			break;
+
+			case PDRS_SET_NAME:
+			{
+				if( 0 == printsetsexpected )
+				{
+					respstate = PDRS_6;
+					continue; //start again and handle this as PDRS6 case
+				}
+
+				if( (16 == len) )
+				{
+					memset( setdata, 0, sizeof(setdata) );
+					memcpy( setdata, pData, 16);
+					respstate = PDRS_SET_DAT1;
+				}
+				else
+					respstate = PDRS_ERROR;
+			}
+			break;
+
+			case PDRS_SET_DAT1:
+			{
+				if( (60 == len) )
+				{
+					memcpy( setdata+16, pData, 60);
+					respstate = PDRS_SET_DAT2;
+				}
+				else
+					respstate = PDRS_ERROR;
+			}
+			break;
+
+			case PDRS_SET_DAT2:
+			{
+				if( (60 == len) )
+				{
+					memcpy( setdata+16+60, pData, 60);
+					UpPrintSets::getInstance()->AddPrintSet((UP_PRINT_SET_STRUCT*)setdata);
+					printsetsexpected--;
+					respstate = PDRS_SET_NAME;
+				}
+				else
+					respstate = PDRS_ERROR;
+			}
+			break;
+
+			case PDRS_6:
+			{
+				if( (1 == len) && (6==pData[0]) )
+					respstate = PDRS_OK;
+				else
+					respstate = PDRS_ERROR;
+			}
+			break;
+
+			case PDRS_OK:
+			case PDRS_ERROR:
 				break;
-			}
 
-			if( (16 == len) )
-			{
-				memset( setdata, 0, sizeof(setdata) );
-				memcpy( setdata, pData, 16);
-				respstate = PDRS_SET_DAT1;
-			}
-			else
+			default:
 				respstate = PDRS_ERROR;
+				break;
 		}
+
 		break;
-
-		case PDRS_SET_DAT1:
-		{
-			if( (60 == len) )
-			{
-				memcpy( setdata+16, pData, 60);
-				respstate = PDRS_SET_DAT2;
-			}
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
-
-		case PDRS_SET_DAT2:
-		{
-			if( (60 == len) )
-			{
-				memcpy( setdata+16+60, pData, 60);
-				UpPrintSets::getInstance()->AddPrintSet((UP_PRINT_SET_STRUCT*)setdata);
-				printsetsexpected--;
-				respstate = PDRS_SET_NAME;
-			}
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
-
-		case PDRS_6:
-		{
-			if( (1 == len) && (6==pData[0]) )
-				respstate = PDRS_OK;
-			else
-				respstate = PDRS_ERROR;
-		}
-		break;
-
-		case PDRS_OK:
-		case PDRS_ERROR:
-			break;
-
-		default:
-			respstate = PDRS_ERROR;
-			break;
 	}
 
 	if( PDRS_ERROR == respstate )
@@ -197,7 +202,7 @@ uint32_t UpPrinterData::GetPrinterDataEmulation(unsigned char* pDataOut, unsigne
 			break;
 
 		case PDRS_DATA_BLOB:
-			if( lenOutAvail>= sizeof(pd_name) )
+			if( lenOutAvail>= sizeof(pd_data) )
 			{
 				memcpy( pDataOut, &pd_data, sizeof(pd_data) );
 
@@ -261,4 +266,17 @@ uint32_t UpPrinterData::GetPrinterDataEmulation(unsigned char* pDataOut, unsigne
 
 	getstate = PDRS_ERROR;
 	return 0;
+}
+
+bool UpPrinterData::PrinterDataAvalibale()
+{
+	return (PDRS_OK == respstate);
+}
+
+void UpPrinterData::PrinterDataEmulationInit()
+{
+	if( PDRS_OK == respstate )
+		getstate = PDRS_7;
+	else
+		getstate = PDRS_ERROR;
 }
