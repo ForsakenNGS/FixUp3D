@@ -77,8 +77,9 @@ int initializeSettingsWindow(HINSTANCE hDllHandle)
 		MessageBox(NULL, TEXT("Call to RegisterClassEx failed"), TEXT("FixUp3D"), MB_OK);
 		return 1;
 	}
-	HWND hWnd = CreateWindow( szWindowClass, szTitle,
-			                  (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX),
+	HWND hWnd = CreateWindowEx( WS_EX_TOPMOST,
+                              szWindowClass, szTitle,
+			                  (WS_OVERLAPPED | WS_CAPTION | /*WS_SYSMENU |*/ WS_MINIMIZEBOX),
 							  CW_USEDEFAULT, CW_USEDEFAULT,
 							  476, 440,
 							  NULL,
