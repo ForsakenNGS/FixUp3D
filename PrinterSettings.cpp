@@ -263,13 +263,13 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 							iLayer = 2;
 							hWndHeaterTemp = hEditHeaterTemp2;
 							pHeaterTemp = &settings.heaterTemp2;
-							pOverride = &settings.heaterTempOverride1;
+							pOverride = &settings.heaterTempOverride2;
 							break;
 						case IDC_INPUT_HEATER_TEMP3:
 							iLayer = 3;
 							hWndHeaterTemp = hEditHeaterTemp3;
 							pHeaterTemp = &settings.heaterTemp3;
-							pOverride = &settings.heaterTempOverride1;
+							pOverride = &settings.heaterTempOverride3;
 							break;
 					}
 					// Get new text
