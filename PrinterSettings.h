@@ -49,21 +49,21 @@
 #define IDC_INPUT_SUPPORT_SCALE		0x611
 #define IDC_INPUT_FEED_SCALE		0x612
 
-#define	PRINTER_SETTING_VERSION	0x0103
+#define	PRINTER_SETTING_VERSION	0x0105
 
 namespace Core {
 
 struct PrinterSettingsStruct {
-	ULONG		heaterTemp1;
-	ULONG		heaterTemp2;
-	ULONG		heaterTemp3;
-	BOOL		heaterTempOverride1;
-	BOOL		heaterTempOverride2;
-	BOOL		heaterTempOverride3;
-	ULONG		preheatTime;
-	BOOL		preheatDelay;
+	ULONG				heaterTemp1;
+	ULONG				heaterTemp2;
+	ULONG				heaterTemp3;
+	BOOL				heaterTempOverride1;
+	BOOL				heaterTempOverride2;
+	BOOL				heaterTempOverride3;
+	ULONG				preheatTime;
+	BOOL				preheatDelay;
 
-	UpPrintSets customPrintSets[4];
+	UP_PRINT_SET_STRUCT customPrintSets[8];
 };
 
 class PrinterSettings {
@@ -140,24 +140,26 @@ public:
 	static PrinterSettings* getInstance();
 	static PrinterSettings* getInstanceNew(HINSTANCE hInstance);
 
-	LRESULT	handleWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-	LRESULT	handlePrintSetTabWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	LRESULT					handleWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	LRESULT					handlePrintSetTabWndMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	void	applyHeaterTemperature();
-	USHORT	getHeaterTemperature(USHORT layer);
-	ULONG	getPreheatTime();
-	BOOL	getPreheatDelayPrint();
-	void	setHWnd(HWND hWnd);
-	void	setHeaterTemperature(USHORT layer, USHORT newTemp);
-	void	setHeaterTemperature(USHORT layer, USHORT newTemp, BOOL override);
-	void	setPreheatTimer(ULONG preheatSeconds);
-	void	setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle);
-	void	readSettingsFromConfig(HWND hWnd);
-	void	resetHeaterTemperature();
-	void	updatePreheatTimer(ULONG newTime);
-	void	updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet);
-	void	updateWindowTitle();
-	void	writeSettingsToConfig();
+	void					applyHeaterTemperature();
+	UP_PRINT_SET_STRUCT*	getCustomPrintSet(USHORT index);
+	USHORT					getHeaterTemperature(USHORT layer);
+	ULONG					getPreheatTime();
+	BOOL					getPreheatDelayPrint();
+	void					setHWnd(HWND hWnd);
+	void					setHeaterTemperature(USHORT layer, USHORT newTemp);
+	void					setHeaterTemperature(USHORT layer, USHORT newTemp, BOOL override);
+	void					setPreheatTimer(ULONG preheatSeconds);
+	void					setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle);
+	void					readSettingsFromConfig(HWND hWnd);
+	void					resetHeaterTemperature();
+	void					updatePreheatTimer(ULONG newTime);
+	void					updatePrintSet();
+	void					updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet);
+	void					updateWindowTitle();
+	void					writeSettingsToConfig();
 };
 
 } /* namespace Core */

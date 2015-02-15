@@ -52,6 +52,9 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	settings.heaterTempOverride1 = false;
 	settings.heaterTempOverride2 = false;
 	settings.heaterTempOverride3 = false;
+	for (USHORT printSetIndex = 0; printSetIndex < 8; printSetIndex++) {
+		strcpy(settings.customPrintSets[printSetIndex].set_name, "NOT_SET");
+	}
 	// Window elements
 	hLabelHeaterTemp = NULL;
 	hLabelHeaterTemp1 = NULL;
@@ -211,7 +214,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 				case TCN_SELCHANGE:
 				{
 					iPrintSetIndex = TabCtrl_GetCurSel(hTabPrinterSets);
-					UP_PRINT_SET_STRUCT* printSet = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex);
+					UP_PRINT_SET_STRUCT* printSet = &settings.customPrintSets[iPrintSetIndex];
 					if (printSet != NULL) {
 						updatePrintSet(iPrintSetIndex, printSet);
 					}
@@ -327,6 +330,10 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+UP_PRINT_SET_STRUCT* PrinterSettings::getCustomPrintSet(USHORT index) {
+	return &settings.customPrintSets[index];
+}
+
 USHORT PrinterSettings::getHeaterTemperature(USHORT layer) {
 	switch (layer) {
 		case 0:
@@ -439,6 +446,8 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 					SetWindowTextA(hEditHeaterTemp3, cInputText);
 					sprintf(cInputText, "%lu", settings.preheatTime / 30);
 					SetWindowTextA(hEditPreheatTime, cInputText);
+					// Printer set
+					updatePrintSet(0, &settings.customPrintSets[0]);
 					// Redraw
 				    InvalidateRect(hEditHeaterTemp1, 0, 1);
 				    InvalidateRect(hEditHeaterTemp2, 0, 1);
@@ -477,102 +486,329 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
 			if (HIWORD(wParam) == EN_CHANGE) {
 				CHAR*			tmpInputText = new CHAR[32];
 				stringstream 	stream;
-				UP_PRINT_SET_STRUCT* printSet = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex);
-				if (printSet != NULL) {
+				UP_PRINT_SET_STRUCT* printSet = &settings.customPrintSets[iPrintSetIndex];
+				if ((printSet != NULL) && (strcmp(printSet->set_name, "NOT_SET") != 0)) {
 					switch( LOWORD(wParam) )
 					{
 						case IDC_INPUT_NOZZLE_DIAMETER:
 							GetWindowTextA(hEditNozzleDiameter, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->nozzle_diameter;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->nozzle_diameter = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->nozzle_diameter;
+								stream << printSet->nozzle_diameter << flush;
+								SetWindowTextA(hEditNozzleDiameter, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->nozzle_diameter;
+							}
+						    InvalidateRect(hEditNozzleDiameter, 0, 1);
 							break;
 						case IDC_INPUT_LAYER_THICKNESS:
 							GetWindowTextA(hEditLayerThickness, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->layer_thickness;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->layer_thickness = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->layer_thickness;
+								stream << printSet->layer_thickness << flush;
+								SetWindowTextA(hEditLayerThickness, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->layer_thickness;
+							}
+						    InvalidateRect(hEditLayerThickness, 0, 1);
 							break;
 						case IDC_INPUT_SCAN_WIDTH:
 							GetWindowTextA(hEditScanWidth, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->scan_width;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->scan_width = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->scan_width;
+								stream << printSet->scan_width << flush;
+								SetWindowTextA(hEditScanWidth, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->scan_width;
+							}
+						    InvalidateRect(hEditScanWidth, 0, 1);
 							break;
 						case IDC_INPUT_SCAN_TIMES:
 							GetWindowTextA(hEditScanTimes, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->scan_times;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->scan_times = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->scan_times;
+								stream << printSet->scan_times << flush;
+								SetWindowTextA(hEditScanTimes, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->scan_times;
+							}
+						    InvalidateRect(hEditScanTimes, 0, 1);
 							break;
 						case IDC_INPUT_HATCH_WIDTH:
 							GetWindowTextA(hEditHatchWidth, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->hatch_width;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->hatch_width = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->hatch_width;
+								stream << printSet->hatch_width << flush;
+								SetWindowTextA(hEditHatchWidth, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->hatch_width;
+							}
+						    InvalidateRect(hEditHatchWidth, 0, 1);
 							break;
 						case IDC_INPUT_HATCH_SPACE:
 							GetWindowTextA(hEditHatchSpace, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->hatch_space;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->hatch_space = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->hatch_space;
+								stream << printSet->hatch_space << flush;
+								SetWindowTextA(hEditHatchSpace, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->hatch_space;
+							}
+						    InvalidateRect(hEditHatchSpace, 0, 1);
 							break;
 						case IDC_INPUT_HATCH_LAYER:
 							GetWindowTextA(hEditHatchLayer, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->hatch_layer;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->hatch_layer = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->hatch_layer;
+								stream << printSet->hatch_layer << flush;
+								SetWindowTextA(hEditHatchLayer, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->hatch_layer;
+							}
+						    InvalidateRect(hEditHatchLayer, 0, 1);
 							break;
 						case IDC_INPUT_SUPPORT_WIDTH:
 							GetWindowTextA(hEditSupportWidth, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->support_width;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->support_width = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->support_width;
+								stream << printSet->support_width << flush;
+								SetWindowTextA(hEditSupportWidth, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->support_width;
+							}
+						    InvalidateRect(hEditSupportWidth, 0, 1);
 							break;
 						case IDC_INPUT_SUPPORT_SPACE:
 							GetWindowTextA(hEditSupportSpace, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->support_space;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->support_space = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->support_space;
+								stream << printSet->support_space << flush;
+								SetWindowTextA(hEditSupportSpace, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->support_space;
+							}
+						    InvalidateRect(hEditSupportSpace, 0, 1);
 							break;
 						case IDC_INPUT_SUPPORT_LAYER:
 							GetWindowTextA(hEditSupportLayer, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->support_layer;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->support_layer = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->support_layer;
+								stream << printSet->support_layer << flush;
+								SetWindowTextA(hEditSupportLayer, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->support_layer;
+							}
+						    InvalidateRect(hEditSupportLayer, 0, 1);
 							break;
 						case IDC_INPUT_SCAN_SPEED:
 							GetWindowTextA(hEditScanSpeed, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->scan_speed;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->scan_speed = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->scan_speed;
+								stream << printSet->scan_speed << flush;
+								SetWindowTextA(hEditScanSpeed, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->scan_speed;
+							}
+						    InvalidateRect(hEditScanSpeed, 0, 1);
 							break;
 						case IDC_INPUT_HATCH_SPEED:
 							GetWindowTextA(hEditHatchSpeed, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->hatch_speed;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->hatch_speed = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->hatch_speed;
+								stream << printSet->hatch_speed << flush;
+								SetWindowTextA(hEditHatchSpeed, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->hatch_speed;
+							}
+						    InvalidateRect(hEditHatchSpeed, 0, 1);
 							break;
 						case IDC_INPUT_SUPPORT_SPEED:
 							GetWindowTextA(hEditSupportSpeed, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->support_speed;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->support_speed = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->support_speed;
+								stream << printSet->support_speed << flush;
+								SetWindowTextA(hEditSupportSpeed, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->support_speed;
+							}
+						    InvalidateRect(hEditSupportSpeed, 0, 1);
 							break;
 						case IDC_INPUT_JUMP_SPEED:
 							GetWindowTextA(hEditJumpSpeed, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->jump_speed;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->jump_speed = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->jump_speed;
+								stream << printSet->jump_speed << flush;
+								SetWindowTextA(hEditJumpSpeed, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->jump_speed;
+							}
+						    InvalidateRect(hEditJumpSpeed, 0, 1);
 							break;
 						case IDC_INPUT_SCAN_SCALE:
 							GetWindowTextA(hEditScanScale, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->scan_scale;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->scan_scale = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->scan_scale;
+								stream << printSet->scan_scale << flush;
+								SetWindowTextA(hEditScanScale, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->scan_scale;
+							}
+						    InvalidateRect(hEditScanScale, 0, 1);
 							break;
 						case IDC_INPUT_HATCH_SCALE:
 							GetWindowTextA(hEditHatchScale, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->hatch_scale;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->hatch_scale = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->hatch_scale;
+								stream << printSet->hatch_scale << flush;
+								SetWindowTextA(hEditHatchScale, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->hatch_scale;
+							}
+						    InvalidateRect(hEditHatchScale, 0, 1);
 							break;
 						case IDC_INPUT_SUPPORT_SCALE:
 							GetWindowTextA(hEditSupportScale, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->support_scale;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->support_scale = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->support_scale;
+								stream << printSet->support_scale << flush;
+								SetWindowTextA(hEditSupportScale, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->support_scale;
+							}
+						    InvalidateRect(hEditSupportScale, 0, 1);
 							break;
 						case IDC_INPUT_FEED_SCALE:
 							GetWindowTextA(hEditFeedScale, tmpInputText, 32);
-							stream << tmpInputText << flush;
-							stream >> printSet->feed_scale;
+							if (strcmp(tmpInputText, "") == 0) {
+								// Empty / Value deleted
+								printSet->feed_scale = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true)->feed_scale;
+								stream << printSet->feed_scale << flush;
+								SetWindowTextA(hEditFeedScale, stream.str().c_str());
+							} else {
+								// Not empty
+								stream << tmpInputText << flush;
+								stream >> printSet->feed_scale;
+							}
+						    InvalidateRect(hEditFeedScale, 0, 1);
 							break;
 					}
 				}
+			}
+			break;
+			case WM_CTLCOLOREDIT:
+			{
+				HDC		hdc = (HDC)wParam;
+				HWND	hWndEdit = (HWND)lParam;
+				UP_PRINT_SET_STRUCT* printSetDefault = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true);
+				if (printSetDefault != NULL) {
+					UP_PRINT_SET_STRUCT* printSetCustom = &settings.customPrintSets[iPrintSetIndex];
+					if (hWndEdit == hEditNozzleDiameter) {
+						SetBkColor(hdc, (printSetCustom->nozzle_diameter != printSetDefault->nozzle_diameter ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditLayerThickness) {
+						SetBkColor(hdc, (printSetCustom->layer_thickness != printSetDefault->layer_thickness ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditScanWidth) {
+						SetBkColor(hdc, (printSetCustom->scan_width != printSetDefault->scan_width ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditScanTimes) {
+						SetBkColor(hdc, (printSetCustom->scan_times != printSetDefault->scan_times ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditHatchWidth) {
+						SetBkColor(hdc, (printSetCustom->hatch_width != printSetDefault->hatch_width ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditHatchSpace) {
+						SetBkColor(hdc, (printSetCustom->hatch_space != printSetDefault->hatch_space ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditHatchLayer) {
+						SetBkColor(hdc, (printSetCustom->hatch_layer != printSetDefault->hatch_layer ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditSupportWidth) {
+						SetBkColor(hdc, (printSetCustom->support_width != printSetDefault->support_width ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditSupportSpace) {
+						SetBkColor(hdc, (printSetCustom->support_space != printSetDefault->support_space ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditSupportLayer) {
+						SetBkColor(hdc, (printSetCustom->support_layer != printSetDefault->support_layer ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditScanSpeed) {
+						SetBkColor(hdc, (printSetCustom->scan_speed != printSetDefault->scan_speed ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditHatchSpeed) {
+						SetBkColor(hdc, (printSetCustom->hatch_speed != printSetDefault->hatch_speed ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditSupportSpeed) {
+						SetBkColor(hdc, (printSetCustom->support_speed != printSetDefault->support_speed ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditJumpSpeed) {
+						SetBkColor(hdc, (printSetCustom->jump_speed != printSetDefault->jump_speed ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditScanScale) {
+						SetBkColor(hdc, (printSetCustom->scan_scale != printSetDefault->scan_scale ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditHatchScale) {
+						SetBkColor(hdc, (printSetCustom->hatch_scale != printSetDefault->hatch_scale ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditSupportScale) {
+						SetBkColor(hdc, (printSetCustom->support_scale != printSetDefault->support_scale ? backgroundEditChanged : backgroundEditDefault));
+					}
+					if (hWndEdit == hEditFeedScale) {
+						SetBkColor(hdc, (printSetCustom->feed_scale != printSetDefault->feed_scale ? backgroundEditChanged : backgroundEditDefault));
+					}
+				}
+				return (LRESULT)GetStockObject(HOLLOW_BRUSH);
 			}
 			break;
 	}
@@ -580,15 +816,31 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
     return CallWindowProc(origWndProc, hWnd, message, wParam, lParam);
 }
 
+void PrinterSettings::updatePrintSet() {
+	updatePrintSet(iPrintSetIndex, &settings.customPrintSets[iPrintSetIndex]);
+}
+
 void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet) {
+	if (strcmp(settings.customPrintSets[index].set_name, "NOT_SET") == 0) {
+		// No custom set defined
+		memcpy(&settings.customPrintSets[index], printSet, sizeof(UP_PRINT_SET_STRUCT));
+	}
+	printSet = &settings.customPrintSets[index];
 	CHAR* cTemp = new CHAR[32];
 	if (index >= iPrintSetCount) {
+		// Create tab
 		TCITEM	tabSet;
 		tabSet.mask = TCIF_TEXT;
 		tabSet.iImage = -1;
 		tabSet.pszText = printSet->set_name;
 		TabCtrl_InsertItem(hTabPrinterSets, index, &tabSet);
 		iPrintSetCount = index + 1;
+	} else {
+		// Update text
+		TCITEM	tabSet;
+		TabCtrl_GetItem(hTabPrinterSets, index, &tabSet);
+		tabSet.pszText = printSet->set_name;
+		TabCtrl_SetItem(hTabPrinterSets, index, &tabSet);
 	}
 	if (iPrintSetIndex == index) {
 		// Update input fields
@@ -629,6 +881,7 @@ void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* pr
 		sprintf(cTemp, "%f", printSet->feed_scale);
 		SetWindowTextA(hEditFeedScale, cTemp);
 	}
+    InvalidateRect(hTabPrinterSets, 0, 1);
 	delete[] cTemp;
 }
 

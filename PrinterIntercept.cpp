@@ -322,6 +322,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		{
 			log->writeString("[GetPrinterParam] Result: ")->writeLong(lengthTransferred)->writeString(" : ")->writeBinaryBuffer(buffer, lengthTransferred)->writeString("\r\n");
 			lastWriteKeep = UpPrinterData::getInstance()->PrinterDataFromUpResponse(buffer,lengthTransferred);
+			PrinterSettings::getInstance()->updatePrintSet();
 		}
 		break;
 

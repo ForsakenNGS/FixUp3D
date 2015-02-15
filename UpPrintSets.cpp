@@ -89,8 +89,17 @@ bool UpPrintSets::AddPrintSet(char set_name[16], float nozzle_diameter,
 
 UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index)
 {
-	if (print_sets_valid > index) {
-		return &print_sets[index];
+	return GetPrintSet(index, false);
+}
+
+UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index, WINBOOL forceDefault)
+{
+	if (forceDefault) {
+		if (print_sets_valid > index) {
+			return &print_sets[index];
+		}
+	} else {
+		return Core::PrinterSettings::getInstance()->getCustomPrintSet(index);
 	}
 	return NULL;
 }
