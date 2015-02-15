@@ -27,6 +27,8 @@
 #define IDC_BUTTON_SET_TEMP		0x401
 #define IDC_BUTTON_STOP_PRINT	0x402
 #define IDC_BUTTON_PRINT_AGAIN	0x403
+#define IDC_BUTTON_IMPORT		0x404
+#define IDC_BUTTON_EXPORT		0x405
 
 #define IDC_TAB_PRINTER_SETS	0x501
 
@@ -89,6 +91,8 @@ private:
 	HWND							hEditHeaterTemp3;
 	HWND							hLabelPreheatTime;
 	HWND							hEditPreheatTime;
+	HWND							hButtonImport;
+	HWND							hButtonExport;
 	HWND							hButtonSetTemp;
 	HWND							hButtonStopPrint;
 	HWND							hButtonPrintAgain;
@@ -154,12 +158,14 @@ public:
 	void					setPreheatTimer(ULONG preheatSeconds);
 	void					setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle);
 	void					readSettingsFromConfig(HWND hWnd);
+	void					readSettingsFromConfig(HWND hWnd, char* sFilename);
 	void					resetHeaterTemperature();
 	void					updatePreheatTimer(ULONG newTime);
 	void					updatePrintSet();
 	void					updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet);
 	void					updateWindowTitle();
 	void					writeSettingsToConfig();
+	void					writeSettingsToConfig(char* sFilename);
 };
 
 } /* namespace Core */

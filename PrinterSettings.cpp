@@ -65,6 +65,8 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hEditHeaterTemp3 = NULL;
 	hLabelPreheatTime = NULL;
 	hEditPreheatTime = NULL;
+	hButtonImport = NULL;
+	hButtonExport = NULL;
 	hButtonSetTemp = NULL;
 	hButtonStopPrint = NULL;
 	hButtonPrintAgain = NULL;
@@ -129,9 +131,11 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			hEditHeaterTemp3 = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 348, 32, 80, 22, hWnd, (HMENU)IDC_INPUT_HEATER_TEMP3, hInstDll, 0);
 			hLabelPreheatTime = CreateWindow("Static", "Preheat Timer (Min)", WS_CHILD|WS_VISIBLE, 4, 60, 160, 22, hWnd, (HMENU)IDC_LABEL_PREHEAT_TIME, hInstDll, 0);
 			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 60, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
-			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 4, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
-			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 88, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
-			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
+			hButtonImport = CreateWindow("Button", "Import config", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 4, 88, 100, 22, hWnd, (HMENU)IDC_BUTTON_IMPORT, hInstDll, 0);
+			hButtonExport = CreateWindow("Button", "Export config", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 108, 88, 100, 22, hWnd, (HMENU)IDC_BUTTON_EXPORT, hInstDll, 0);
+			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 212, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
+			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 296, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
+			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 380, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
 			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE|WS_TABSTOP, 0, 120, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
 			origWndProc = (WNDPROC)SetWindowLongPtr( hTabPrinterSets, GWLP_WNDPROC, (LONG_PTR)PrinterSetTabWndProc);
 
@@ -231,6 +235,40 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			MessageBox(NULL, debug, "FixUp3D", NULL);
 			*/
 			if (HIWORD(wParam) == BN_CLICKED) {
+				if (LOWORD(wParam) == IDC_BUTTON_IMPORT) {
+					OPENFILENAME	fileOpenStruct;
+					ZeroMemory(&fileOpenStruct, sizeof(fileOpenStruct));
+					fileOpenStruct.lStructSize = sizeof(fileOpenStruct);
+					fileOpenStruct.hwndOwner = hWnd;
+					fileOpenStruct.nMaxFile = MAX_PATH;
+					fileOpenStruct.lpstrFile = new TCHAR[MAX_PATH];
+					fileOpenStruct.lpstrFile[0] = '\0';
+					fileOpenStruct.lpstrFilter = "Config files\0*.cfg\0";
+					fileOpenStruct.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+					if (GetOpenFileName(&fileOpenStruct))  {
+						readSettingsFromConfig(hWnd, fileOpenStruct.lpstrFile);
+					}
+					delete[] fileOpenStruct.lpstrFile;
+				}
+				if (LOWORD(wParam) == IDC_BUTTON_EXPORT) {
+					OPENFILENAME	fileOpenStruct;
+					ZeroMemory(&fileOpenStruct, sizeof(fileOpenStruct));
+					fileOpenStruct.lStructSize = sizeof(fileOpenStruct);
+					fileOpenStruct.hwndOwner = hWnd;
+					fileOpenStruct.nMaxFile = MAX_PATH;
+					fileOpenStruct.lpstrFile = new TCHAR[MAX_PATH];
+					fileOpenStruct.lpstrFile[0] = '\0';
+					fileOpenStruct.lpstrFilter = "Config files\0*.cfg\0";
+					fileOpenStruct.Flags = OFN_PATHMUSTEXIST;
+					if (GetSaveFileName(&fileOpenStruct))  {
+						if (strstr(fileOpenStruct.lpstrFile, ".cfg") == NULL) {
+							// Append extension
+							sprintf(fileOpenStruct.lpstrFile, "%s%s", fileOpenStruct.lpstrFile, ".cfg");
+						}
+						writeSettingsToConfig(fileOpenStruct.lpstrFile);
+					}
+					delete[] fileOpenStruct.lpstrFile;
+				}
 				if (LOWORD(wParam) == IDC_BUTTON_SET_TEMP) {
 					// Manual temperature set requested
 					PrinterIntercept::getInstance()->setNozzle1Temp( settings.heaterTemp3 );
@@ -425,43 +463,47 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd) {
 		_mkdir(sFilename);
 		// Open/create config file
 		sprintf(sFilename, "%s\\FixUp3D\\config.cfg", sHomeDir);
-		HANDLE hFile = CreateFile(sFilename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile == INVALID_HANDLE_VALUE) {
-			// Config file does not exist
-			MessageBox(NULL, TEXT("Failed to read configuration (Could not open file)"), TEXT("FixUp3D"), MB_OK);
-			return;
-		}
-		DWORD	dwVersion = 0;
-		DWORD	dwBytesRead = 0;
-		if (ReadFile(hFile, &dwVersion, sizeof(DWORD), &dwBytesRead, NULL)) {
-			if (dwVersion == PRINTER_SETTING_VERSION) {
-				if (ReadFile(hFile, &settings, sizeof(settings), &dwBytesRead, NULL)) {
-					// Success!
-					CHAR* cInputText = new CHAR[16];
-					sprintf(cInputText, "%lu", settings.heaterTemp1);
-					SetWindowTextA(hEditHeaterTemp1, cInputText);
-					sprintf(cInputText, "%lu", settings.heaterTemp2);
-					SetWindowTextA(hEditHeaterTemp2, cInputText);
-					sprintf(cInputText, "%lu", settings.heaterTemp3);
-					SetWindowTextA(hEditHeaterTemp3, cInputText);
-					sprintf(cInputText, "%lu", settings.preheatTime / 30);
-					SetWindowTextA(hEditPreheatTime, cInputText);
-					// Printer set
-					updatePrintSet(0, &settings.customPrintSets[0]);
-					// Redraw
-				    InvalidateRect(hEditHeaterTemp1, 0, 1);
-				    InvalidateRect(hEditHeaterTemp2, 0, 1);
-				    InvalidateRect(hEditHeaterTemp3, 0, 1);
-				    InvalidateRect(hEditPreheatTime, 0, 1);
-				} else {
-					// TODO: Error
-				}
-			} else {
-				// TODO: Conversion or Error
-			}
-		}
-		CloseHandle(hFile);
+		readSettingsFromConfig(hWnd, sFilename);
 	}
+}
+
+void PrinterSettings::readSettingsFromConfig(HWND hWnd, char* sFilename) {
+	HANDLE hFile = CreateFile(sFilename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		// Config file does not exist
+		MessageBox(NULL, TEXT("Failed to read configuration (Could not open file)"), TEXT("FixUp3D"), MB_OK);
+		return;
+	}
+	DWORD	dwVersion = 0;
+	DWORD	dwBytesRead = 0;
+	if (ReadFile(hFile, &dwVersion, sizeof(DWORD), &dwBytesRead, NULL)) {
+		if (dwVersion == PRINTER_SETTING_VERSION) {
+			if (ReadFile(hFile, &settings, sizeof(settings), &dwBytesRead, NULL)) {
+				// Success!
+				CHAR* cInputText = new CHAR[16];
+				sprintf(cInputText, "%lu", settings.heaterTemp1);
+				SetWindowTextA(hEditHeaterTemp1, cInputText);
+				sprintf(cInputText, "%lu", settings.heaterTemp2);
+				SetWindowTextA(hEditHeaterTemp2, cInputText);
+				sprintf(cInputText, "%lu", settings.heaterTemp3);
+				SetWindowTextA(hEditHeaterTemp3, cInputText);
+				sprintf(cInputText, "%lu", settings.preheatTime / 30);
+				SetWindowTextA(hEditPreheatTime, cInputText);
+				// Printer set
+				updatePrintSet(0, &settings.customPrintSets[0]);
+				// Redraw
+			    InvalidateRect(hEditHeaterTemp1, 0, 1);
+			    InvalidateRect(hEditHeaterTemp2, 0, 1);
+			    InvalidateRect(hEditHeaterTemp3, 0, 1);
+			    InvalidateRect(hEditPreheatTime, 0, 1);
+			} else {
+				// TODO: Error
+			}
+		} else {
+			// TODO: Conversion or Error
+		}
+	}
+	CloseHandle(hFile);
 }
 
 void PrinterSettings::resetHeaterTemperature() {
@@ -906,24 +948,28 @@ void PrinterSettings::writeSettingsToConfig() {
 		_mkdir(sFilename);
 		// Open/create config file
 		sprintf(sFilename, "%s\\FixUp3D\\config.cfg", sHomeDir);
-		HANDLE hFile = CreateFile(sFilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile == INVALID_HANDLE_VALUE) {
-			MessageBox(NULL, TEXT("Failed to write configuration (Could not create file)"), TEXT("FixUp3D"), MB_OK);
-			return;
-		}
-		DWORD	dwVersion = PRINTER_SETTING_VERSION;
-		DWORD	dwBytesWritten = 0;
-		if (WriteFile(hFile, &dwVersion, sizeof(DWORD), &dwBytesWritten, NULL)) {
-			if (WriteFile(hFile, &settings, sizeof(settings), &dwBytesWritten, NULL)) {
-				// Success!
-			} else {
-				MessageBox(NULL, TEXT("Failed to write configuration"), TEXT("FixUp3D"), MB_OK);
-			}
+		writeSettingsToConfig(sFilename);
+	}
+}
+
+void PrinterSettings::writeSettingsToConfig(char* sFilename) {
+	HANDLE hFile = CreateFile(sFilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		MessageBox(NULL, TEXT("Failed to write configuration (Could not create file)"), TEXT("FixUp3D"), MB_OK);
+		return;
+	}
+	DWORD	dwVersion = PRINTER_SETTING_VERSION;
+	DWORD	dwBytesWritten = 0;
+	if (WriteFile(hFile, &dwVersion, sizeof(DWORD), &dwBytesWritten, NULL)) {
+		if (WriteFile(hFile, &settings, sizeof(settings), &dwBytesWritten, NULL)) {
+			// Success!
 		} else {
 			MessageBox(NULL, TEXT("Failed to write configuration"), TEXT("FixUp3D"), MB_OK);
 		}
-		CloseHandle(hFile);
+	} else {
+		MessageBox(NULL, TEXT("Failed to write configuration"), TEXT("FixUp3D"), MB_OK);
 	}
+	CloseHandle(hFile);
 }
 
 } /* namespace Core */
