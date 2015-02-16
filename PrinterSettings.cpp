@@ -243,7 +243,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					fileOpenStruct.hwndOwner = hWnd;
 					fileOpenStruct.nMaxFile = MAX_PATH;
 					fileOpenStruct.lpstrFile = new TCHAR[MAX_PATH];
-					fileOpenStruct.lpstrFile[0] = '\0';
+					fileOpenStruct.lpstrFile[0] = 0;
 					fileOpenStruct.lpstrFilter = "Config files\0*.cfg\0";
 					fileOpenStruct.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 					if (GetOpenFileName(&fileOpenStruct))  {
@@ -258,7 +258,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					fileOpenStruct.hwndOwner = hWnd;
 					fileOpenStruct.nMaxFile = MAX_PATH;
 					fileOpenStruct.lpstrFile = new TCHAR[MAX_PATH];
-					fileOpenStruct.lpstrFile[0] = '\0';
+					fileOpenStruct.lpstrFile[0] = 0;
 					fileOpenStruct.lpstrFilter = "Config files\0*.cfg\0";
 					fileOpenStruct.Flags = OFN_PATHMUSTEXIST;
 					if (GetSaveFileName(&fileOpenStruct))  {
@@ -284,7 +284,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 				}
 			}
 			if (HIWORD(wParam) == EN_CHANGE) {
-				CHAR*			tmpInputText = new CHAR[32];
+				char tmpInputText[32];
 				stringstream 	stream;
 				if ((LOWORD(wParam) == IDC_INPUT_HEATER_TEMP1) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP2) || (LOWORD(wParam) == IDC_INPUT_HEATER_TEMP3)) {
 					// Heater temp changed
@@ -358,10 +358,10 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					// Redraw input
 				    InvalidateRect(hEditPreheatTime, 0, 1);
 				}
-				delete[] tmpInputText;
 			}
-			break;
 		}
+		break;
+
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			break;
@@ -430,12 +430,10 @@ void PrinterSettings::setHeaterTemperature(USHORT layer, USHORT newTemp, BOOL ov
 		// No custom temperature is set / Setting new custom temperature
 		*pHeaterTemp = newTemp;
 		if (!override) {
-			CHAR* cHeaterTemp = new CHAR[16];
+			char cHeaterTemp[16];
 			sprintf(cHeaterTemp, "%lu", *pHeaterTemp);
 			// Update input field
 			SetWindowText(hHeaterTempEdit, cHeaterTemp);
-			// Cleanup
-			delete[] cHeaterTemp;
 		}
 	}
 	// Set override flag if required
@@ -445,10 +443,9 @@ void PrinterSettings::setHeaterTemperature(USHORT layer, USHORT newTemp, BOOL ov
 void PrinterSettings::setPreheatTimer(ULONG preheatSeconds) {
 	settings.preheatTime = preheatSeconds;
 	// Update input field
-	CHAR* cPreheatMinutes = new CHAR[16];
+	char cPreheatMinutes[16];
 	sprintf(cPreheatMinutes, "%lu", settings.preheatTime / 30);
 	SetWindowText(hEditPreheatTime, cPreheatMinutes);
-	delete[] cPreheatMinutes;
 }
 
 void PrinterSettings::setUsbHandle(WINUSB_INTERFACE_HANDLE newHandle) {
@@ -472,7 +469,7 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd, char* sFilename) {
 	HANDLE hFile = CreateFile(sFilename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		// Config file does not exist
-		MessageBox(NULL, TEXT("Failed to read configuration (Could not open file)"), TEXT("FixUp3D"), MB_OK);
+		//MessageBox(NULL, TEXT("Failed to read configuration (Could not open file)"), TEXT("FixUp3D"), MB_OK);
 		return;
 	}
 	DWORD	dwVersion = 0;
@@ -481,7 +478,7 @@ void PrinterSettings::readSettingsFromConfig(HWND hWnd, char* sFilename) {
 		if (dwVersion == PRINTER_SETTING_VERSION) {
 			if (ReadFile(hFile, &settings, sizeof(settings), &dwBytesRead, NULL)) {
 				// Success!
-				CHAR* cInputText = new CHAR[16];
+				char cInputText[16];
 				sprintf(cInputText, "%lu", settings.heaterTemp1);
 				SetWindowTextA(hEditHeaterTemp1, cInputText);
 				sprintf(cInputText, "%lu", settings.heaterTemp2);
@@ -527,7 +524,7 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
 	{
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE) {
-				CHAR*			tmpInputText = new CHAR[32];
+				char tmpInputText[32];
 				stringstream 	stream;
 				UP_PRINT_SET_STRUCT* printSet = &settings.customPrintSets[iPrintSetIndex];
 				if ((printSet != NULL) && (strcmp(printSet->set_name, "NOT_SET") != 0)) {
@@ -788,72 +785,79 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
 					}
 				}
 			}
-			break;
-			case WM_CTLCOLOREDIT:
-			{
-				HDC		hdc = (HDC)wParam;
-				HWND	hWndEdit = (HWND)lParam;
-				UP_PRINT_SET_STRUCT* printSetDefault = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true);
-				if (printSetDefault != NULL) {
-					UP_PRINT_SET_STRUCT* printSetCustom = &settings.customPrintSets[iPrintSetIndex];
-					if (hWndEdit == hEditNozzleDiameter) {
-						SetBkColor(hdc, (printSetCustom->nozzle_diameter != printSetDefault->nozzle_diameter ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditLayerThickness) {
-						SetBkColor(hdc, (printSetCustom->layer_thickness != printSetDefault->layer_thickness ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditScanWidth) {
-						SetBkColor(hdc, (printSetCustom->scan_width != printSetDefault->scan_width ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditScanTimes) {
-						SetBkColor(hdc, (printSetCustom->scan_times != printSetDefault->scan_times ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditHatchWidth) {
-						SetBkColor(hdc, (printSetCustom->hatch_width != printSetDefault->hatch_width ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditHatchSpace) {
-						SetBkColor(hdc, (printSetCustom->hatch_space != printSetDefault->hatch_space ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditHatchLayer) {
-						SetBkColor(hdc, (printSetCustom->hatch_layer != printSetDefault->hatch_layer ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditSupportWidth) {
-						SetBkColor(hdc, (printSetCustom->support_width != printSetDefault->support_width ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditSupportSpace) {
-						SetBkColor(hdc, (printSetCustom->support_space != printSetDefault->support_space ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditSupportLayer) {
-						SetBkColor(hdc, (printSetCustom->support_layer != printSetDefault->support_layer ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditScanSpeed) {
-						SetBkColor(hdc, (printSetCustom->scan_speed != printSetDefault->scan_speed ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditHatchSpeed) {
-						SetBkColor(hdc, (printSetCustom->hatch_speed != printSetDefault->hatch_speed ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditSupportSpeed) {
-						SetBkColor(hdc, (printSetCustom->support_speed != printSetDefault->support_speed ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditJumpSpeed) {
-						SetBkColor(hdc, (printSetCustom->jump_speed != printSetDefault->jump_speed ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditScanScale) {
-						SetBkColor(hdc, (printSetCustom->scan_scale != printSetDefault->scan_scale ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditHatchScale) {
-						SetBkColor(hdc, (printSetCustom->hatch_scale != printSetDefault->hatch_scale ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditSupportScale) {
-						SetBkColor(hdc, (printSetCustom->support_scale != printSetDefault->support_scale ? backgroundEditChanged : backgroundEditDefault));
-					}
-					if (hWndEdit == hEditFeedScale) {
-						SetBkColor(hdc, (printSetCustom->feed_scale != printSetDefault->feed_scale ? backgroundEditChanged : backgroundEditDefault));
-					}
+		break;
+
+		case WM_CTLCOLOREDIT:
+		{
+			HDC		hdc = (HDC)wParam;
+			HWND	hWndEdit = (HWND)lParam;
+			UP_PRINT_SET_STRUCT* printSetDefault = UpPrintSets::getInstance()->GetPrintSet(iPrintSetIndex, true);
+			if (printSetDefault != NULL) {
+				UP_PRINT_SET_STRUCT* printSetCustom = &settings.customPrintSets[iPrintSetIndex];
+				if (hWndEdit == hEditNozzleDiameter) {
+					SetBkColor(hdc, (printSetCustom->nozzle_diameter != printSetDefault->nozzle_diameter ? backgroundEditChanged : backgroundEditDefault));
 				}
-				return (LRESULT)GetStockObject(HOLLOW_BRUSH);
+				if (hWndEdit == hEditLayerThickness) {
+					SetBkColor(hdc, (printSetCustom->layer_thickness != printSetDefault->layer_thickness ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditScanWidth) {
+					SetBkColor(hdc, (printSetCustom->scan_width != printSetDefault->scan_width ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditScanTimes) {
+					SetBkColor(hdc, (printSetCustom->scan_times != printSetDefault->scan_times ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditHatchWidth) {
+					SetBkColor(hdc, (printSetCustom->hatch_width != printSetDefault->hatch_width ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditHatchSpace) {
+					SetBkColor(hdc, (printSetCustom->hatch_space != printSetDefault->hatch_space ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditHatchLayer) {
+					SetBkColor(hdc, (printSetCustom->hatch_layer != printSetDefault->hatch_layer ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditSupportWidth) {
+					SetBkColor(hdc, (printSetCustom->support_width != printSetDefault->support_width ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditSupportSpace) {
+					SetBkColor(hdc, (printSetCustom->support_space != printSetDefault->support_space ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditSupportLayer) {
+					SetBkColor(hdc, (printSetCustom->support_layer != printSetDefault->support_layer ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditScanSpeed) {
+					SetBkColor(hdc, (printSetCustom->scan_speed != printSetDefault->scan_speed ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditHatchSpeed) {
+					SetBkColor(hdc, (printSetCustom->hatch_speed != printSetDefault->hatch_speed ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditSupportSpeed) {
+					SetBkColor(hdc, (printSetCustom->support_speed != printSetDefault->support_speed ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditJumpSpeed) {
+					SetBkColor(hdc, (printSetCustom->jump_speed != printSetDefault->jump_speed ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditScanScale) {
+					SetBkColor(hdc, (printSetCustom->scan_scale != printSetDefault->scan_scale ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditHatchScale) {
+					SetBkColor(hdc, (printSetCustom->hatch_scale != printSetDefault->hatch_scale ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditSupportScale) {
+					SetBkColor(hdc, (printSetCustom->support_scale != printSetDefault->support_scale ? backgroundEditChanged : backgroundEditDefault));
+				}
+				if (hWndEdit == hEditFeedScale) {
+					SetBkColor(hdc, (printSetCustom->feed_scale != printSetDefault->feed_scale ? backgroundEditChanged : backgroundEditDefault));
+				}
 			}
-			break;
+			return (LRESULT)GetStockObject(HOLLOW_BRUSH);
+		}
+		break;
+
+		case WM_APP:
+		{
+			updatePrintSetGUI( lParam );
+		}
+		break;
 	}
 
     return CallWindowProc(origWndProc, hWnd, message, wParam, lParam);
@@ -870,8 +874,12 @@ void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* pr
 		// No custom set defined
 		memcpy(&settings.customPrintSets[index], printSet, sizeof(UP_PRINT_SET_STRUCT));
 	}
-	printSet = &settings.customPrintSets[index];
-	CHAR* cTemp = new CHAR[32];
+	PostMessage( hTabPrinterSets, WM_APP, 0, index );
+}
+
+void PrinterSettings::updatePrintSetGUI(unsigned int index) {
+
+	UP_PRINT_SET_STRUCT* printSet = &settings.customPrintSets[index];
 	if (index >= iPrintSetCount) {
 		// Create tab
 		TCITEM	tabSet;
@@ -887,7 +895,9 @@ void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* pr
 		tabSet.pszText = printSet->set_name;
 		TabCtrl_SetItem(hTabPrinterSets, index, &tabSet);
 	}
+
 	if (iPrintSetIndex == index) {
+		char cTemp[32];
 		// Update input fields
 		sprintf(cTemp, "%f", printSet->nozzle_diameter);
 		SetWindowTextA(hEditNozzleDiameter, cTemp);
@@ -926,8 +936,8 @@ void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* pr
 		sprintf(cTemp, "%f", printSet->feed_scale);
 		SetWindowTextA(hEditFeedScale, cTemp);
 	}
+
     InvalidateRect(hTabPrinterSets, 0, 1);
-	delete[] cTemp;
 }
 
 void PrinterSettings::updateWindowTitle() {

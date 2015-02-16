@@ -163,6 +163,7 @@ public:
 	void					updatePreheatTimer(ULONG newTime);
 	void					updatePrintSet();
 	void					updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet);
+	void                    updatePrintSetGUI(unsigned int index);
 	void					updateWindowTitle();
 	void					writeSettingsToConfig();
 	void					writeSettingsToConfig(char* sFilename);
