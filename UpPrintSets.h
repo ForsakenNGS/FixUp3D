@@ -96,7 +96,7 @@ public:
 
 	unsigned int GetPrintSetsAvail();
 	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index);
-	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index, WINBOOL forceDefault);
+	UP_PRINT_SET_STRUCT* GetPrintSet(unsigned int index, bool forceDefault);
 
 private:
     static UpPrintSets   *instance;

@@ -92,7 +92,7 @@ UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index)
 	return GetPrintSet(index, false);
 }
 
-UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index, WINBOOL forceDefault)
+UP_PRINT_SET_STRUCT* UpPrintSets::GetPrintSet(unsigned int index, bool forceDefault)
 {
 	if (forceDefault) {
 		if (print_sets_valid > index) {
