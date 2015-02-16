@@ -53,6 +53,7 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	settings.heaterTempOverride2 = false;
 	settings.heaterTempOverride3 = false;
 	for (USHORT printSetIndex = 0; printSetIndex < 8; printSetIndex++) {
+		ZeroMemory(&settings.customPrintSets[printSetIndex], sizeof(UP_PRINT_SET_STRUCT));
 		strcpy(settings.customPrintSets[printSetIndex].set_name, "NOT_SET");
 	}
 	// Window elements
@@ -859,7 +860,9 @@ LRESULT	PrinterSettings::handlePrintSetTabWndMessage(HWND hWnd, UINT message, WP
 }
 
 void PrinterSettings::updatePrintSet() {
-	updatePrintSet(iPrintSetIndex, &settings.customPrintSets[iPrintSetIndex]);
+	if (strcmp(settings.customPrintSets[iPrintSetIndex].set_name, "NOT_SET") != 0) {
+		updatePrintSet(iPrintSetIndex, &settings.customPrintSets[iPrintSetIndex]);
+	}
 }
 
 void PrinterSettings::updatePrintSet(unsigned int index, UP_PRINT_SET_STRUCT* printSet) {
