@@ -72,8 +72,7 @@ void PrinterIntercept::addCustomCommandDelay(ULONG delayInMs) {
 	FixUp3DCustomCommand	cmdDelay;
 	cmdDelay.command = FIXUP3D_CMD_PAUSE;
 	cmdDelay.commandBytes = 2;
-	cmdDelay.arguments = malloc( sizeof(ULARGE_INTEGER) );
-	memcpy(cmdDelay.arguments, &timeResume, sizeof(ULARGE_INTEGER));
+	memcpy( &cmdDelay.arguments, &timeResume, sizeof(ULARGE_INTEGER));
 	cmdDelay.argumentsLength = sizeof(ULARGE_INTEGER);
 	cmdDelay.responseLength = 0;
 	addCustomCommand(cmdDelay);
@@ -84,7 +83,8 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 		// Check if resume time is reached
 		ULARGE_INTEGER	timeNow;
 		GetSystemTimeAsFileTime((LPFILETIME)&timeNow);
-		ULARGE_INTEGER&	timeResume = *((ULARGE_INTEGER*)command.arguments);
+		ULARGE_INTEGER	timeResume;
+		memcpy( &timeResume, &command.arguments, sizeof(ULARGE_INTEGER) );
 		if (timeNow.QuadPart >= timeResume.QuadPart) {
 			return true;
 		} else {
@@ -100,9 +100,6 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 	if (command.argumentsLength > 0) {
 		// Write arguments to buffer
 		memcpy(cmdBuffer + command.commandBytes, command.arguments, command.argumentsLength);
-		// Free commands argument buffer
-		free(command.arguments);
-		command.arguments = 0;
 	}
 	log->writeString("[CustomCmd] Debug: 0x")->writeBinaryBuffer(cmdBuffer, cmdBufferLen)->writeString("\r\n");
 	// Write prepared command buffer
@@ -315,7 +312,7 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 }
 
 void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred) {
-	PrinterSettings*	settings = PrinterSettings::getInstance();
+	PrinterSettings* settings = PrinterSettings::getInstance();
 	switch (command)
 	{
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
@@ -591,7 +588,6 @@ void PrinterIntercept::sendGetConnected() {
 	FixUp3DCustomCommand	cmdGetConnected;
 	cmdGetConnected.command = FIXUP3D_CMD_GET_CONNECTED;
 	cmdGetConnected.commandBytes = 2;
-	cmdGetConnected.arguments = NULL;
 	cmdGetConnected.argumentsLength = 0;
 	cmdGetConnected.responseLength = 5;
 	addCustomCommand(cmdGetConnected);
@@ -601,7 +597,6 @@ void PrinterIntercept::sendGetUnknownStatus() {
 	FixUp3DCustomCommand	cmdGetUnknownStatus;
 	cmdGetUnknownStatus.command = FIXUP3D_CMD_GET_UNKNOWN_STATUS;
 	cmdGetUnknownStatus.commandBytes = 2;
-	cmdGetUnknownStatus.arguments = NULL;
 	cmdGetUnknownStatus.argumentsLength = 0;
 	cmdGetUnknownStatus.responseLength = 5;
 	addCustomCommand(cmdGetUnknownStatus);
@@ -611,7 +606,6 @@ void PrinterIntercept::sendGetPrinterStatus() {
 	FixUp3DCustomCommand	cmdGetPrinterStatus;
 	cmdGetPrinterStatus.command = FIXUP3D_CMD_GET_PRINTER_STATUS;
 	cmdGetPrinterStatus.commandBytes = 2;
-	cmdGetPrinterStatus.arguments = NULL;
 	cmdGetPrinterStatus.argumentsLength = 0;
 	cmdGetPrinterStatus.responseLength = 5;
 	addCustomCommand(cmdGetPrinterStatus);
@@ -621,7 +615,6 @@ void PrinterIntercept::sendGetUnknown8E() {
 	FixUp3DCustomCommand	cmdGetUnknown8E;
 	cmdGetUnknown8E.command = FIXUP3D_CMD_GET_UNKOWN8E;
 	cmdGetUnknown8E.commandBytes = 2;
-	cmdGetUnknown8E.arguments = NULL;
 	cmdGetUnknown8E.argumentsLength = 0;
 	cmdGetUnknown8E.responseLength = 5;
 	addCustomCommand(cmdGetUnknown8E);
@@ -631,7 +624,6 @@ void PrinterIntercept::sendProgramGo() {
 	FixUp3DCustomCommand	cmdProgramGo;
 	cmdProgramGo.command = FIXUP3D_CMD_PROGRAM_GO;
 	cmdProgramGo.commandBytes = 1;
-	cmdProgramGo.arguments = NULL;
 	cmdProgramGo.argumentsLength = 0;
 	cmdProgramGo.responseLength = 12;
 	addCustomCommand(cmdProgramGo);
@@ -641,7 +633,6 @@ void PrinterIntercept::sendProgramNew() {
 	FixUp3DCustomCommand	cmdProgramNew;
 	cmdProgramNew.command = FIXUP3D_CMD_PROGRAM_NEW;
 	cmdProgramNew.commandBytes = 1;
-	cmdProgramNew.arguments = NULL;
 	cmdProgramNew.argumentsLength = 0;
 	cmdProgramNew.responseLength = 1;
 	addCustomCommand(cmdProgramNew);
@@ -651,7 +642,6 @@ void PrinterIntercept::sendUnknown53() {
 	FixUp3DCustomCommand	cmdUnknown53;
 	cmdUnknown53.command = FIXUP3D_CMD_UNKNOWN53;
 	cmdUnknown53.commandBytes = 1;
-	cmdUnknown53.arguments = NULL;
 	cmdUnknown53.argumentsLength = 0;
 	cmdUnknown53.responseLength = 1;
 	addCustomCommand(cmdUnknown53);
@@ -661,7 +651,6 @@ void PrinterIntercept::sendUnknown4C32() {
 	FixUp3DCustomCommand	cmdUnknown4C32;
 	cmdUnknown4C32.command = FIXUP3D_CMD_UNKNOWN4C32;
 	cmdUnknown4C32.commandBytes = 2;
-	cmdUnknown4C32.arguments = NULL;
 	cmdUnknown4C32.argumentsLength = 0;
 	cmdUnknown4C32.responseLength = 5;
 	addCustomCommand(cmdUnknown4C32);
@@ -671,7 +660,6 @@ void PrinterIntercept::sendUnknown4C33() {
 	FixUp3DCustomCommand	cmdUnknown4C33;
 	cmdUnknown4C33.command = FIXUP3D_CMD_UNKNOWN4C33;
 	cmdUnknown4C33.commandBytes = 2;
-	cmdUnknown4C33.arguments = NULL;
 	cmdUnknown4C33.argumentsLength = 0;
 	cmdUnknown4C33.responseLength = 5;
 	addCustomCommand(cmdUnknown4C33);
@@ -681,7 +669,6 @@ void PrinterIntercept::sendUnknown4C35() {
 	FixUp3DCustomCommand	cmdUnknown4C35;
 	cmdUnknown4C35.command = FIXUP3D_CMD_UNKNOWN4C35;
 	cmdUnknown4C35.commandBytes = 2;
-	cmdUnknown4C35.arguments = NULL;
 	cmdUnknown4C35.argumentsLength = 0;
 	cmdUnknown4C35.responseLength = 5;
 	addCustomCommand(cmdUnknown4C35);
@@ -691,7 +678,6 @@ void PrinterIntercept::sendUnknown6C(USHORT param) {
 	FixUp3DCustomCommand	cmdUnknown6C;
 	cmdUnknown6C.command = FIXUP3D_CMD_UNKNOWN6C;
 	cmdUnknown6C.commandBytes = 1;
-	cmdUnknown6C.arguments = malloc(2);
 	memcpy(cmdUnknown6C.arguments, &param, 2);
 	cmdUnknown6C.argumentsLength = 2;
 	cmdUnknown6C.responseLength = 1;
@@ -702,7 +688,6 @@ void PrinterIntercept::sendUnknown7330() {
 	FixUp3DCustomCommand	cmdUnknown7330;
 	cmdUnknown7330.command = FIXUP3D_CMD_UNKNOWN7330;
 	cmdUnknown7330.commandBytes = 2;
-	cmdUnknown7330.arguments = NULL;
 	cmdUnknown7330.argumentsLength = 0;
 	cmdUnknown7330.responseLength = 1;
 	addCustomCommand(cmdUnknown7330);
@@ -712,7 +697,6 @@ void PrinterIntercept::sendUnknown7331() {
 	FixUp3DCustomCommand	cmdUnknown7331;
 	cmdUnknown7331.command = FIXUP3D_CMD_UNKNOWN7331;
 	cmdUnknown7331.commandBytes = 2;
-	cmdUnknown7331.arguments = NULL;
 	cmdUnknown7331.argumentsLength = 0;
 	cmdUnknown7331.responseLength = 1;
 	addCustomCommand(cmdUnknown7331);
@@ -722,7 +706,6 @@ void PrinterIntercept::sendUnknown7332() {
 	FixUp3DCustomCommand	cmdUnknown7332;
 	cmdUnknown7332.command = FIXUP3D_CMD_UNKNOWN7332;
 	cmdUnknown7332.commandBytes = 2;
-	cmdUnknown7332.arguments = NULL;
 	cmdUnknown7332.argumentsLength = 0;
 	cmdUnknown7332.responseLength = 1;
 	addCustomCommand(cmdUnknown7332);
@@ -732,7 +715,6 @@ void PrinterIntercept::sendUnknown7333() {
 	FixUp3DCustomCommand	cmdUnknown7333;
 	cmdUnknown7333.command = FIXUP3D_CMD_UNKNOWN7333;
 	cmdUnknown7333.commandBytes = 2;
-	cmdUnknown7333.arguments = NULL;
 	cmdUnknown7333.argumentsLength = 0;
 	cmdUnknown7333.responseLength = 1;
 	addCustomCommand(cmdUnknown7333);
@@ -742,7 +724,6 @@ void PrinterIntercept::setNozzle1Temp(ULONG temperature) {
 	FixUp3DCustomCommand	cmdSetTemp;
 	cmdSetTemp.command = FIXUP3D_CMD_SET_NOZZLE1_TEMP;
 	cmdSetTemp.commandBytes = 2;
-	cmdSetTemp.arguments = malloc(4);
 	memcpy(cmdSetTemp.arguments, &temperature, 4);
 	cmdSetTemp.argumentsLength = 4;
 	cmdSetTemp.responseLength = 1;
@@ -753,7 +734,6 @@ void PrinterIntercept::setUnknown10(ULONG value) {
 	FixUp3DCustomCommand	cmdSetUnknown10;
 	cmdSetUnknown10.command = FIXUP3D_CMD_SET_PRINTER_STATUS;
 	cmdSetUnknown10.commandBytes = 2;
-	cmdSetUnknown10.arguments = malloc(4);
 	memcpy(cmdSetUnknown10.arguments, &value, 4);
 	cmdSetUnknown10.argumentsLength = 4;
 	cmdSetUnknown10.responseLength = 1;
@@ -764,7 +744,6 @@ void PrinterIntercept::setUnknown14(ULONG value) {
 	FixUp3DCustomCommand	cmdSetUnknown14;
 	cmdSetUnknown14.command = FIXUP3D_CMD_SET_UNKNOWN14;
 	cmdSetUnknown14.commandBytes = 2;
-	cmdSetUnknown14.arguments = malloc(4);
 	memcpy(cmdSetUnknown14.arguments, &value, 4);
 	cmdSetUnknown14.argumentsLength = 4;
 	cmdSetUnknown14.responseLength = 1;
@@ -775,7 +754,6 @@ void PrinterIntercept::setUnknown16(ULONG value) {
 	FixUp3DCustomCommand	cmdSetUnknown16;
 	cmdSetUnknown16.command = FIXUP3D_CMD_SET_UNKNOWN16;
 	cmdSetUnknown16.commandBytes = 2;
-	cmdSetUnknown16.arguments = malloc(4);
 	memcpy(cmdSetUnknown16.arguments, &value, 4);
 	cmdSetUnknown16.argumentsLength = 4;
 	cmdSetUnknown16.responseLength = 1;
@@ -786,7 +764,6 @@ void PrinterIntercept::setUnknown8E(ULONG value) {
 	FixUp3DCustomCommand	cmdSetUnknown8E;
 	cmdSetUnknown8E.command = FIXUP3D_CMD_SET_UNKNOWN8E;
 	cmdSetUnknown8E.commandBytes = 2;
-	cmdSetUnknown8E.arguments = malloc(4);
 	memcpy(cmdSetUnknown8E.arguments, &value, 4);
 	cmdSetUnknown8E.argumentsLength = 4;
 	cmdSetUnknown8E.responseLength = 1;
@@ -797,7 +774,6 @@ void PrinterIntercept::setPreheatTimer(ULONG value) {
 	FixUp3DCustomCommand	cmdSetPreheatTimer;
 	cmdSetPreheatTimer.command = FIXUP3D_CMD_SET_PREHEAT_TIMER;
 	cmdSetPreheatTimer.commandBytes = 2;
-	cmdSetPreheatTimer.arguments = malloc(4);
 	memcpy(cmdSetPreheatTimer.arguments, &value, 4);
 	cmdSetPreheatTimer.argumentsLength = 4;
 	cmdSetPreheatTimer.responseLength = 1;

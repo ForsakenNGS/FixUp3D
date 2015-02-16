@@ -131,7 +131,7 @@ namespace Core {
 struct	FixUp3DCustomCommand {
 	USHORT			command;
 	USHORT			commandBytes;
-	void*			arguments;
+	UCHAR			arguments[8];
 	ULONG			argumentsLength;
 	ULONG			responseLength;
 };
