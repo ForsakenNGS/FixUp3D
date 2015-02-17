@@ -19,6 +19,9 @@ Here you can see a print with 0.1 mm layer height, printed on an UP! Mini with t
 
 Please note: This project is in an early state. A lot of tests need to be done before you can use it safely. Use it on your own risk as it might damage the nozzle or other parts of the printer.
 
+Documentation
+=============
+A quick documentation with the most important information for usage is available <a href="/Documentation.md">here</a>. 
 
 Download pre compiled version
 =============================
