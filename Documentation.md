@@ -2,15 +2,6 @@ Known Bugs/Problems
 ===================
 - The preheat timer is still quite hacky and may cause trouble with larger models. (See more below)
 
-Future Features
-===============
-- More reliable preheat timer
-- More comfortable configuration management (File > Open/Save/SaveAs/Recent)
-- Renameable print sets
-- Adding more print sets (up to 8 could be possible without major effort. to be checked!)
-- Lower bed after the print is done
-- Allow the window to be minimized or in background so it doesn't take up so much of the screen when you're working with a print
-
 General
 =======
 
@@ -27,8 +18,8 @@ Heater Temperatures
 ===================
 
 The heater temperatures are configurable for different layers individually:
-- Layer 1: Temperature for the first layer. By default this is + 10°C higher than layers 3+
-- Layer 2: Temperature for the second layer. By default this is + 5°C higher than layers 3+
+- Layer 1: Temperature for the first layer. By default this is 10°C higher than layers 3+
+- Layer 2: Temperature for the second layer. By default this is 5°C higher than layers 3+
 - Layer 3+: Temperature for the 3rd and following layers. This temperature is also used for extrusion/withdraw.
 
 Preheat timer
@@ -67,3 +58,12 @@ Known values and wild guesses:
 - "Hatch Scale": ??? Always 1.05 for Up Mini
 - "Support Scale": ??? Always 0.9 for Up Mini
 - "Feed Scale": This seems to be the (base?) speed value for the extruder.
+
+TODOs / Future Features
+=======================
+- More reliable preheat timer
+- More comfortable configuration management (File > Open/Save/SaveAs/Recent)
+- Renameable print sets
+- Adding more print sets (up to 8 could be possible without major effort. to be checked!)
+- Lower bed after the print is done
+- Allow the window to be minimized or in background so it doesn't take up so much of the screen when you're working with a print
