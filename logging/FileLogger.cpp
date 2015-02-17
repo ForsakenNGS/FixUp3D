@@ -10,6 +10,10 @@
 namespace Logging {
 
 FileLogger::FileLogger(const char* filename, const int lvl) : Target(lvl), outf(filename, std::ios_base::app | std::ios_base::out) {
+	long size = outf.tellp();
+	if (size > MAX_LOG_FILE_SIZE) {
+		outf.seekp(0);
+	}
 	InitializeCriticalSection(&m_criticalSection);
 }
 

@@ -69,7 +69,7 @@ PrinterSettings::PrinterSettings(HINSTANCE hInstance) {
 	hButtonImport = NULL;
 	hButtonExport = NULL;
 	hButtonSetTemp = NULL;
-	hButtonStopPrint = NULL;
+	hButtonSendGcode = NULL;
 	hButtonPrintAgain = NULL;
 	// - Print set tabs
 	hTabPrinterSets = NULL;
@@ -134,8 +134,8 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 			hEditPreheatTime = CreateWindow("Edit", "0", WS_BORDER|WS_CHILD|WS_VISIBLE|WS_TABSTOP, 172, 60, 80, 22, hWnd, (HMENU)IDC_INPUT_PREHEAT_TIME, hInstDll, 0);
 			hButtonImport = CreateWindow("Button", "Import config", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 4, 88, 100, 22, hWnd, (HMENU)IDC_BUTTON_IMPORT, hInstDll, 0);
 			hButtonExport = CreateWindow("Button", "Export config", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 108, 88, 100, 22, hWnd, (HMENU)IDC_BUTTON_EXPORT, hInstDll, 0);
-			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 212, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
-			hButtonStopPrint = CreateWindow("Button", "Stop Print", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 296, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_STOP_PRINT, hInstDll, 0);
+			hButtonSendGcode = CreateWindow("Button", "Send Gcode", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 212, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SEND_GCODE, hInstDll, 0);
+			hButtonSetTemp = CreateWindow("Button", "Send Temp", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 296, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_SET_TEMP, hInstDll, 0);
 			hButtonPrintAgain = CreateWindow("Button", "Print again", WS_CHILD|WS_VISIBLE|WS_TABSTOP, 380, 88, 80, 22, hWnd, (HMENU)IDC_BUTTON_PRINT_AGAIN, hInstDll, 0);
 			hTabPrinterSets = CreateWindow(WC_TABCONTROL, "Print sets", WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE|WS_TABSTOP, 0, 120, 476, 292, hWnd, (HMENU)IDC_TAB_PRINTER_SETS, hInstDll, 0);
 			origWndProc = (WNDPROC)SetWindowLongPtr( hTabPrinterSets, GWLP_WNDPROC, (LONG_PTR)PrinterSetTabWndProc);
@@ -270,13 +270,24 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					}
 					delete[] fileOpenStruct.lpstrFile;
 				}
+				if (LOWORD(wParam) == IDC_BUTTON_SEND_GCODE) {
+					OPENFILENAME	fileOpenStruct;
+					ZeroMemory(&fileOpenStruct, sizeof(fileOpenStruct));
+					fileOpenStruct.lStructSize = sizeof(fileOpenStruct);
+					fileOpenStruct.hwndOwner = hWnd;
+					fileOpenStruct.nMaxFile = MAX_PATH;
+					fileOpenStruct.lpstrFile = new TCHAR[MAX_PATH];
+					fileOpenStruct.lpstrFile[0] = 0;
+					fileOpenStruct.lpstrFilter = "GCode files\0*.gcode\0";
+					fileOpenStruct.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+					if (GetOpenFileName(&fileOpenStruct))  {
+						PrinterIntercept::getInstance()->sendGcode(fileOpenStruct.lpstrFile);
+					}
+					delete[] fileOpenStruct.lpstrFile;
+				}
 				if (LOWORD(wParam) == IDC_BUTTON_SET_TEMP) {
 					// Manual temperature set requested
 					PrinterIntercept::getInstance()->setNozzle1Temp( settings.heaterTemp3 );
-				}
-				if (LOWORD(wParam) == IDC_BUTTON_STOP_PRINT) {
-					// Stop the current print job
-					PrinterIntercept::getInstance()->stopPrint();
 				}
 				if (LOWORD(wParam) == IDC_BUTTON_PRINT_AGAIN) {
 					// Stop the current print job

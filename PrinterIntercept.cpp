@@ -41,14 +41,14 @@ PrinterIntercept::PrinterIntercept() : fileMemDump(), log("PrinterIntercept") {
 		_mkdir(sFilename);
 		// Create log writer
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\PrinterIntercept.log"), sHomeDir);
-		log.addTarget("file", new Logging::FileLogger(sFilename, LogLevel::DEBUG));
+		log.addTarget("file", new Logging::FileLogger(sFilename, LogLevel::INFO));
 		//log = new Core::SimpleLogWriter(sFilename);
 #ifdef DEBUG_MEMWRITE
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\MemDump.dat"), sHomeDir);
 		fileMemDump.open(sFilename, std::ios_base::binary | std::ios_base::out);
 #endif
 	}
-	log.addTarget("console", new Logging::ConsoleTarget(LogLevel::DEBUG));
+	log.addTarget("console", new Logging::ConsoleTarget(LogLevel::INFO));
 	// Initialize members
 	interceptReply = FIXUP3D_REPLY_DONT_INTERCEPT;
 	printerStatus = 0;
@@ -59,6 +59,7 @@ PrinterIntercept::PrinterIntercept() : fileMemDump(), log("PrinterIntercept") {
 	lastWriteCustom = 0;
 	lastWriteKeep = false;
 	memCurrentLayer = 0;
+	memset(&memLastBlock, 0, sizeof(FixUp3DMemBlock));
 	temperatureNozzle1Base = 0;
 	temperatureNozzle2Base = 0;
 	temperatureNozzle3Base = 0;
@@ -265,6 +266,19 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		}
 		break;
 
+		case FIXUP3D_CMD_SET_NOZZLE2_TEMP:
+		{
+			temperatureNozzle2Base = argLong;
+			settings->setHeaterTemperature(3, argLong, false);
+			ULONG TargetTemperature = settings->getHeaterTemperature(3);
+			if (TargetTemperature != argLong) {
+				// Override temperature!
+				log.get(LogLevel::DEBUG) << "[SetNozzle2Temp] Overriding Temperature: " << std::dec << argLong << "°C > " << TargetTemperature << "°C\n";
+				UPCMD_SetArgLong(buffer, TargetTemperature);
+			}
+		}
+		break;
+
 		case FIXUP3D_CMD_PROGRAM_GO:	// Called after sending print data
 		{
 			memCurrentLayer = 0;
@@ -296,6 +310,7 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		{
 			PUCHAR pBuf = buffer;
 			ULONG len = bufferLength;
+			ULONG offset = 0;
 			for (;;) {
 				UCHAR numBlocks = *(pBuf + 1);
 				pBuf += 2; //JUMP OVER 2Fxx
@@ -556,21 +571,68 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 	}
 }
 
+/**
+ * Process a memory-/command-block for writing to sdcard
+ */
 void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 #ifdef DEBUG_MEMWRITE
 	if (fileMemDump.is_open()) {
 		fileMemDump.write((char*)memBlock, sizeof(FixUp3DMemBlock));
+		fileMemDump.flush();
 	}
 #endif
 	switch (memBlock->command) {
-		case FIXUP3D_MEM_CMD_MOVE:
+		case FIXUP3D_MEM_CMD_STOP:
 		{
-			// TODO: Handle move commands
+			log.get(LogLevel::INFO) << "[WriteMem] Stop!\n";
 		}
 		break;
-		case FIXUP3D_MEM_CMD_EXTRUDER_CTRL:
+		case FIXUP3D_MEM_CMD_MOVE_FLOAT:
 		{
-			// TODO: Handle move commands
+			if (memLastBlock.command != FIXUP3D_MEM_CMD_MOVE_FLOAT) {
+				// First block
+				memcpy(&memLastBlock, memBlock, sizeof(FixUp3DMemBlock));
+			} else {
+				// Second block
+				FixUp3DMemBlock* memBlockNext = memBlock + 1;
+				float speedX = memLastBlock.params.floats.fParam1;
+				float posX = memLastBlock.params.floats.fParam2;
+				float speedY = memLastBlock.params.floats.fParam3;
+				float posY = memLastBlock.params.floats.fParam4;
+				float speedZ = memBlock->params.floats.fParam1;
+				float posZ = memBlock->params.floats.fParam2;
+				float speedE = memBlock->params.floats.fParam3;
+				float posE = memBlock->params.floats.fParam4;
+				log.get(LogLevel::INFO) << "[WriteMem] MOVE_FLOAT" << std::dec
+						<< "\tX: " << posX << "(" << speedX << ")"
+						<< "\tY:" << posY << "(" << speedY << ")"
+						<< "\tZ: " << posZ << "(" << speedZ << ")"
+						<< "\tE: " << posE << "(" << speedE << ")" << "\n";
+				// Clear prev block
+				memset(&memLastBlock, 0, sizeof(FixUp3DMemBlock));
+			}
+		}
+		break;
+		case FIXUP3D_MEM_CMD_MOVE_SHORT:
+		{
+			SHORT speedX = memBlock->params.shorts.uParam1;
+			SHORT posX = memBlock->params.shorts.uParam2;
+			SHORT speedY = memBlock->params.shorts.uParam3;
+			SHORT posY = memBlock->params.shorts.uParam4;
+			SHORT speedZ = memBlock->params.shorts.uParam5;
+			SHORT posZ = memBlock->params.shorts.uParam6;
+			SHORT speedE = memBlock->params.shorts.uParam7;
+			SHORT posE = memBlock->params.shorts.uParam8;
+			log.get(LogLevel::INFO) << "[WriteMem] MOVE_SHORT" << std::dec
+					<< "\tX: " << posX << "(" << speedX << ")"
+					<< "\tY:" << posY << "(" << speedY << ")"
+					<< "\tZ: " << posZ << "(" << speedZ << ")"
+					<< "\tE: " << posE << "(" << speedE << ")" << "\n";
+		}
+		break;
+		case FIXUP3D_MEM_CMD_UNKNOWN5:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] Unknown5: " << memBlock->params.longs.lParam1 << "\n";
 		}
 		break;
 		case FIXUP3D_MEM_CMD_SET_PARAM:
@@ -581,9 +643,9 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 		default:
 		{
 		#ifdef DEBUG_MEMWRITE
-			log.get(LogLevel::DEBUG) << "[WriteMem] Unknown MemBlock: ";
-			log.writeBinaryAsHex(LogLevel::DEBUG, memBlock, sizeof(FixUp3DMemBlock));
-			log.get(LogLevel::DEBUG) << "\n";
+			log.get(LogLevel::INFO) << "[WriteMem] Unknown MemBlock: ";
+			log.writeBinaryAsHex(LogLevel::INFO, memBlock, sizeof(FixUp3DMemBlock));
+			log.get(LogLevel::INFO) << "\n";
 		#endif
 		}
 		break;
@@ -596,6 +658,27 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 		case FIXUP3D_MEM_PARAM_LAYER:
 		{
 			memCurrentLayer = params.longs.lParam2;
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Layer " << std::dec << memCurrentLayer << "\n";
+		}
+		break;
+		case FIXUP3D_MEM_PARAM_BED_TEMP:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Bed Temperature: " << std::dec << params.longs.lParam2 << "°C\n";
+		}
+		break;
+		case FIXUP3D_MEM_PARAM_HEIGHT:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Report Height: " << std::dec << params.floats.fParam2 << "\n";
+		}
+		break;
+		case FIXUP3D_MEM_PARAM_TIME_REMAINING:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Report Time remaining: " << std::dec << params.longs.lParam2 << "\n";
+		}
+		break;
+		case FIXUP3D_MEM_PARAM_TIME_PERCENT:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Report Time gone: " << std::dec << params.longs.lParam2 << "%\n";
 		}
 		break;
 		case FIXUP3D_MEM_PARAM_NOZZLE1_TEMP:
@@ -609,21 +692,50 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 			ULONG TargetTemperature = settings->getHeaterTemperature(memCurrentLayer);
 			if (TargetTemperature != temperature) {
 				// Override temperature!
-				log.get(LogLevel::DEBUG) << "[WriteMem] Overriding Temperature: " << std::dec << temperature << "°C > " << TargetTemperature << "°C\n";
+				log.get(LogLevel::INFO) << "[WriteMem] Overriding Nozzle 1 Temperature: " << std::dec << temperature << "°C > " << TargetTemperature << "°C\n";
 				params.longs.lParam2 = TargetTemperature;
 			}
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Nozzle 1 Temperature " << std::dec << TargetTemperature << "°C\n";
+		}
+		break;
+		case FIXUP3D_MEM_PARAM_NOZZLE2_TEMP:
+		{
+			ULONG&	temperature = params.longs.lParam2;
+			if (temperatureNozzle2Base == 0) {
+				temperatureNozzle2Base = temperature;
+			}
+			/*
+			PrinterSettings*	settings = PrinterSettings::getInstance();
+			settings->setHeaterTemperature(memCurrentLayer, temperature, false);
+			ULONG TargetTemperature = settings->getHeaterTemperature(memCurrentLayer);
+			if (TargetTemperature != temperature) {
+				// Override temperature!
+				log.get(LogLevel::INFO) << "[WriteMem] Overriding Nozzle 2 Temperature: " << std::dec << temperature << "°C > " << TargetTemperature << "°C\n";
+				params.longs.lParam2 = TargetTemperature;
+			}
+			*/
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Nozzle 2 Temperature " << std::dec << temperature << "°C\n";
+		}
+		break;
+		case FIXUP3D_MEM_CMD_MOTORS_OFF:
+		{
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Disable Servos? " << params.longs.lParam1 << "\n";
 		}
 		break;
 		default:
 		{
 		#ifdef DEBUG_MEMWRITE
-			log.get(LogLevel::DEBUG) << "[WriteMem] Unknown MemBlock Parameter: ";
+			log.get(LogLevel::INFO) << "[WriteMem] Unknown MemBlock Parameter: ";
 			log.writeBinaryAsHex(LogLevel::DEBUG, &params, sizeof(FixUp3DMemBlockParams));
-			log.get(LogLevel::DEBUG) << "\n";
+			log.get(LogLevel::INFO) << "\n";
 		#endif
 		}
 		break;
 	}
+}
+
+void PrinterIntercept::sendGcode(const char* file) {
+	// TODO: Convert gcode and write result to sdcard / send it to the printer
 }
 
 void PrinterIntercept::sendGetConnected() {

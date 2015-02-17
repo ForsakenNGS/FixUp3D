@@ -122,11 +122,13 @@ namespace Core {
 #define FIXUP3D_REPLY_CUSTOMPRINTERDATA		0x0002
 
 // Commands that are written as to sdcard
+#define FIXUP3D_MEM_CMD_STOP				0x00000001
 #define FIXUP3D_MEM_CMD_PAUSE				0x00000002
 #define FIXUP3D_MEM_CMD_MOVE_FLOAT			0x00000003
-#define FIXUP3D_MEM_CMD_MOVE_LONG			0x00000004
-#define FIXUP3D_MEM_CMD_EXTRUDER_CTRL		0x00000005
+#define FIXUP3D_MEM_CMD_MOVE_SHORT			0x00000004
+#define FIXUP3D_MEM_CMD_UNKNOWN5			0x00000005
 #define FIXUP3D_MEM_CMD_SET_PARAM			0x00000006
+#define FIXUP3D_MEM_CMD_MOTORS_OFF			0x00000016
 // Parameters sent using the "FIXUP3D_MEM_CMD_SET_PARAM" command
 #define FIXUP3D_MEM_PARAM_LAYER				0x0000000A
 #define FIXUP3D_MEM_PARAM_HEIGHT			0x0000000B
@@ -157,6 +159,16 @@ union	FixUp3DMemBlockParams {
 		ULONG	lParam3;
 		ULONG	lParam4;
 	} longs;
+	struct	FixUp3DMemBlockShortParams {
+		SHORT	uParam1;
+		SHORT	uParam2;
+		SHORT	uParam3;
+		SHORT	uParam4;
+		SHORT	uParam5;
+		SHORT	uParam6;
+		SHORT	uParam7;
+		SHORT	uParam8;
+	} shorts;
 };
 
 struct	FixUp3DMemBlock {
@@ -192,6 +204,7 @@ private:
 	ULONG					printerStatus;
 	ULONG					preheatStatus;
 	ULONG					memCurrentLayer;
+	FixUp3DMemBlock			memLastBlock;
 
 	void	addCustomCommand(FixUp3DCustomCommand &command);
 	void	addCustomCommandDelay(ULONG delayInMs);
@@ -208,6 +221,8 @@ public:
 	ULONG	handleUsbPreRead(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG bufferLength);
 	void	handleUsbRead(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG lengthTransferred);
 	BOOL	handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG bufferLength);
+
+	void	sendGcode(const char* file);
 
 	void	sendGetConnected();
 	void	sendGetUnknownStatus();

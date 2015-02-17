@@ -25,7 +25,7 @@
 #define IDC_INPUT_PREHEAT_TIME	0x204
 
 #define IDC_BUTTON_SET_TEMP		0x401
-#define IDC_BUTTON_STOP_PRINT	0x402
+#define IDC_BUTTON_SEND_GCODE	0x402
 #define IDC_BUTTON_PRINT_AGAIN	0x403
 #define IDC_BUTTON_IMPORT		0x404
 #define IDC_BUTTON_EXPORT		0x405
@@ -94,7 +94,7 @@ private:
 	HWND							hButtonImport;
 	HWND							hButtonExport;
 	HWND							hButtonSetTemp;
-	HWND							hButtonStopPrint;
+	HWND							hButtonSendGcode;
 	HWND							hButtonPrintAgain;
 	HWND							hTabPrinterSets;
 

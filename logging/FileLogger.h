@@ -12,7 +12,11 @@
 #include <windows.h>
 #include <fstream>
 
+// 1 MB
+#define MAX_LOG_FILE_SIZE		1048576
+
 namespace Logging {
+
 
 class FileLogger: public Target {
 private:
