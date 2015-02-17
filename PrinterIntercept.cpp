@@ -5,7 +5,7 @@
  *      Author: Forsaken
  */
 
-//#define DEBUG_MEMWRITE
+#define DEBUG_MEMWRITE
 
 #include "PrinterIntercept.h"
 #include "PrinterSettings.h"
@@ -27,7 +27,7 @@ PrinterIntercept* PrinterIntercept::getInstance() {
 	return instance;
 }
 
-PrinterIntercept::PrinterIntercept() {
+PrinterIntercept::PrinterIntercept() : fileMemDump() {
 	customCommandsSending = false;
 	preheatStatus = FIXUP3D_PREHEAT_DISABLED;
 	// Initialize log writer
@@ -40,6 +40,10 @@ PrinterIntercept::PrinterIntercept() {
 		// Create log writer
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\PrinterIntercept.log"), sHomeDir);
 		log = new Core::SimpleLogWriter(sFilename);
+#ifdef DEBUG_MEMWRITE
+		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\MemDump.dat"), sHomeDir);
+		fileMemDump.open(sFilename);
+#endif
 	}
 	// Initialize members
 	interceptReply = FIXUP3D_REPLY_DONT_INTERCEPT;
@@ -57,7 +61,10 @@ PrinterIntercept::PrinterIntercept() {
 }
 
 PrinterIntercept::~PrinterIntercept() {
-	// TODO Auto-generated destructor stub
+	if (fileMemDump.is_open()) {
+		fileMemDump.flush();
+		fileMemDump.close();
+	}
 }
 
 void PrinterIntercept::addCustomCommand(FixUp3DCustomCommand &command) {
@@ -524,6 +531,11 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 }
 
 void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
+#ifdef DEBUG_MEMWRITE
+	if (fileMemDump.is_open()) {
+		fileMemDump.write(reinterpret_cast<char *>(memBlock), sizeof(FixUp3DMemBlock));
+	}
+#endif
 	switch (memBlock->command) {
 		case FIXUP3D_MEM_CMD_MOVE:
 		{
