@@ -10,6 +10,8 @@
 #include "PrinterIntercept.h"
 #include "PrinterSettings.h"
 #include "UpPrinterData.h"
+#include "logging/ConsoleTarget.h"
+#include "logging/FileLogger.h"
 #include <iostream>
 #include <direct.h>
 #include <Shlobj.h>
@@ -27,7 +29,7 @@ PrinterIntercept* PrinterIntercept::getInstance() {
 	return instance;
 }
 
-PrinterIntercept::PrinterIntercept() : fileMemDump() {
+PrinterIntercept::PrinterIntercept() : fileMemDump(), log("PrinterIntercept") {
 	customCommandsSending = false;
 	preheatStatus = FIXUP3D_PREHEAT_DISABLED;
 	// Initialize log writer
@@ -39,12 +41,14 @@ PrinterIntercept::PrinterIntercept() : fileMemDump() {
 		_mkdir(sFilename);
 		// Create log writer
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\PrinterIntercept.log"), sHomeDir);
-		log = new Core::SimpleLogWriter(sFilename);
+		log.addTarget("file", new Logging::FileLogger(sFilename, LogLevel::DEBUG));
+		//log = new Core::SimpleLogWriter(sFilename);
 #ifdef DEBUG_MEMWRITE
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\MemDump.dat"), sHomeDir);
 		fileMemDump.open(sFilename);
 #endif
 	}
+	log.addTarget("console", new Logging::ConsoleTarget(LogLevel::DEBUG));
 	// Initialize members
 	interceptReply = FIXUP3D_REPLY_DONT_INTERCEPT;
 	printerStatus = 0;
@@ -98,7 +102,7 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 			return false;
 		}
 	}
-	log->writeString("[CustomCmd] Sending command: 0x")->writeBinaryBuffer(&command.command, command.commandBytes)->writeString(" ...\r\n");
+	log.get(LogLevel::DEBUG) << "[CustomCmd] Sending command: 0x" << std::hex << command.command << " ...\n";
 	ULONG	cmdBufferLen = command.commandBytes + command.argumentsLength;
 	UCHAR	cmdBuffer[cmdBufferLen];
 	ULONG	transferLen = 0;
@@ -108,20 +112,23 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 		// Write arguments to buffer
 		memcpy(cmdBuffer + command.commandBytes, command.arguments, command.argumentsLength);
 	}
-	log->writeString("[CustomCmd] Debug: 0x")->writeBinaryBuffer(cmdBuffer, cmdBufferLen)->writeString("\r\n");
+	log.get(LogLevel::DEBUG) << "[CustomCmd] Debug: 0x";
+	log.writeBinaryAsHex(LogLevel::DEBUG, cmdBuffer, cmdBufferLen);
+	log.get(LogLevel::DEBUG) << "\n";
 	// Write prepared command buffer
 	if (!WinUsb_WritePipe(interfaceHandle, 0x01, cmdBuffer, cmdBufferLen, &transferLen, NULL)) {
-		log->writeString("[CustomCmd] Failed to send custom command! Command: 0x")->writeBinaryBuffer(&command.command, command.commandBytes)
-			->writeString(" Arguments: ")->writeBinaryBuffer(command.arguments, command.argumentsLength)->writeString("\r\n");
+		log.get(LogLevel::DEBUG) << "[CustomCmd] Failed to send custom command! Command: 0x" << std::hex << command.command << " Arguments: ";
+		log.writeBinaryAsHex(LogLevel::DEBUG, command.arguments, command.argumentsLength);
+		log.get(LogLevel::DEBUG) << "\n";
 	} else {
-		log->writeString("[CustomCmd] Wrote command: 0x")->writeBinaryBuffer(&command.command, command.commandBytes)->writeString(" ...\r\n");
+		log.get(LogLevel::DEBUG) << "[CustomCmd] Wrote command: 0x" << std::hex << command.command << " ...\n";
 		UCHAR	respBuffer[command.responseLength];
 		if ((command.responseLength > 0) && !WinUsb_ReadPipe(interfaceHandle, 0x81, respBuffer, command.responseLength, &transferLen, NULL)) {
-			log->writeString("[CustomCmd] Failed to read custom command reply! Command: 0x")->writeBinaryBuffer(&command.command, command.commandBytes)
-				->writeString(" Arguments: ")->writeBinaryBuffer(command.arguments, command.argumentsLength)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[CustomCmd] Failed to read custom command reply! Command: 0x" << std::hex << command.command << ".\n";
 		} else {
-			log->writeString("[CustomCmd] Command 0x")->writeBinaryBuffer(&command.command, command.commandBytes)->writeString(" successfully sent!")
-				->writeString(" Result: ")->writeBinaryBuffer(respBuffer, transferLen)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[CustomCmd] Command 0x" << std::hex << command.command << " successfully sent!\nResult: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, respBuffer, transferLen);
+			log.get(LogLevel::DEBUG) << "\n";
 		}
 	}
 	return true;
@@ -148,7 +155,9 @@ ULONG PrinterIntercept::handleUsbPreRead(WINUSB_INTERFACE_HANDLE interfaceHandle
 			//in case we got valid data from the emulation we return and keep the state (to emulate more data)
 			if( bytesWritten>0 )
 			{
-				log->writeString("[GetPrinterParamEmulation] Result: ")->writeLong(bytesWritten)->writeString(" : ")->writeBinaryBuffer(buffer, bytesWritten)->writeString("\r\n");
+				log.get(LogLevel::DEBUG) << "[GetPrinterParamEmulation] Result: " << std::dec << bytesWritten << " : ";
+				log.writeBinaryAsHex(LogLevel::DEBUG, (void*)buffer, bytesWritten);
+				log.get(LogLevel::DEBUG) << "\n";
 				return bytesWritten;
 			}
 		}
@@ -250,7 +259,7 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 			ULONG TargetTemperature = settings->getHeaterTemperature(3);
 			if (TargetTemperature != argLong) {
 				// Override temperature!
-				log->writeString("[SetNozzle1Temp] Overriding Temperature: ")->writeLong(argLong)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
+				log.get(LogLevel::DEBUG) << "[SetNozzle1Temp] Overriding Temperature: " << std::dec << argLong << "°C > " << TargetTemperature << "°C\n";
 				UPCMD_SetArgLong(buffer, TargetTemperature);
 			}
 		}
@@ -276,7 +285,9 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		case FIXUP3D_CMD_SET_UNKNOWN8E:
 		case FIXUP3D_CMD_SET_UNKNOWN94:
 		{
-			log->writeString("[SetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Data: ")->writeBinaryBuffer(buffer+2,bufferLength-2)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[SetUnknown" << std::hex << command << "] Data: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer+2, bufferLength-2);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_WRITE_MEM_1:
@@ -324,7 +335,9 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 	{
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
 		{
-			log->writeString("[GetPrinterParam] Result: ")->writeLong(lengthTransferred)->writeString(" : ")->writeBinaryBuffer(buffer, lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetPrinterParam] Result: " << std::dec << lengthTransferred << " : ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			lastWriteKeep = UpPrinterData::getInstance()->PrinterDataFromUpResponse(buffer,lengthTransferred);
 			PrinterSettings::getInstance()->updatePrintSet();
 		}
@@ -333,19 +346,19 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_BED_TEMP:
 		{
 			FLOAT temperature = *((PFLOAT)buffer);
-			log->writeString("[GetBedTemp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
+			log.get(LogLevel::DEBUG) << "[GetBedTemp] Result: " << std::dec << temperature << "°C\n";
 			break;
 		}
 		case FIXUP3D_CMD_GET_NOZZLE1_TEMP:
 		{
 			FLOAT temperature = *((PFLOAT)buffer);
-			log->writeString("[GetNozzle1Temp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
+			log.get(LogLevel::DEBUG) << "[GetNozzle1Temp] Result: " << std::dec << temperature << "°C\n";
 			break;
 		}
 		case FIXUP3D_CMD_GET_NOZZLE2_TEMP:
 		{
 			FLOAT temperature = *((PFLOAT)buffer);
-			log->writeString("[GetNozzle2Temp] Result: ")->writeFloat(temperature)->writeString("°C\r\n");
+			log.get(LogLevel::DEBUG) << "[GetNozzle2Temp] Result: " << std::dec << temperature << "°C\n";
 			break;
 		}
 		case FIXUP3D_CMD_GET_POSITION:
@@ -356,7 +369,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 					// Next read also belongs to this command
 					lastWriteKeep = true;
 				}
-				log->writeString("[GetPosition] Read 1 / Result: ")->writeLong(result)->writeString("\r\n");
+				log.get(LogLevel::DEBUG) << "[GetPosition] Read 1 / Result: " << std::dec << result << "\n";
 			} else if (lengthTransferred >= 49) {
 				// Cmd: 0x768C /  Example:
 				/*
@@ -369,8 +382,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 				FLOAT posY = *((PFLOAT)(buffer+9));
 				FLOAT posZ = *((PFLOAT)(buffer+18));
 				FLOAT nozzle = *((PFLOAT)(buffer+27));
-				log->writeString("[GetPosition] Read 2 / PosX: ")->writeFloat(posX)->writeString(" PosY: ")->writeFloat(posY)->writeString(" PosZ: ")->writeFloat(posZ)
-						->writeString(" Nozzle: ")->writeFloat(nozzle)->writeString(" Debug: ")->writeLong(lengthTransferred)->writeString("\r\n");
+				log.get(LogLevel::DEBUG) << "[GetPosition] Read 2 / PosX: " << std::dec << posX << " PosY: " << posY << " PosZ: " << posZ << " Nozzle:" << nozzle << " Debug: " << lengthTransferred << "\n";
 			}
 			break;
 		}
@@ -384,7 +396,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 			}
 			settings->updatePreheatTimer(result);
 			settings->updateWindowTitle();
-			log->writeString("[GetPreheatTimer] Result: ")->writeLong(result)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetPreheatTimer] Result: " << std::dec << result << "\n";
 			if (result == 0) {
 				// Not heating
 				if (preheatStatus == FIXUP3D_PREHEAT_HEATING) {
@@ -402,7 +414,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_LAYER:
 		{
 			ULONG result = *((PUSHORT)buffer);	// Time is stored in 2-minute units
-			log->writeString("[GetLayer] Result: ")->writeLong(result)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetLayer] Result: " << std::dec << result << "\n";
 			break;
 		}
 		// Yet unknown set commands
@@ -415,13 +427,15 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_SET_UNKNOWN8E:
 		case FIXUP3D_CMD_SET_UNKNOWN94:
 		{
-			log->writeString("[SetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[SetUnknown" << std::hex << command << "] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_GET_UNKNOWN_STATUS:
 		{
 			ULONG result = *((PUSHORT)buffer);
-			log->writeString("[GetUnknownStatus] Result: ")->writeLong(result)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetUnknownStatus] Result: " << std::dec << result << "\n";
 			switch (result) {
 				case 2:
 					// Wait until preheat is done?
@@ -451,7 +465,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_PRINTER_STATUS:
 		{
 			ULONG result = *((PUSHORT)buffer);
-			log->writeString("[GetPrinterStatus] Result: ")->writeLong(result)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetPrinterStatus] Result: " << std::dec << result << "\n";
 			printerStatus = result;
 			break;
 		}
@@ -476,31 +490,41 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_GET_UNKOWN3E:
 		{
 			ULONG result = *((PUSHORT)buffer);
-			log->writeString("[GetUnknown")->writeBinaryBuffer(&command, 2)->writeString("] Result: ")->writeLong(result)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[GetUnknown" << std::hex << command << "] Result: " << std::dec << result << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_SET_PREHEAT_TIMER:
 		{
 			if (argLo == 0) {
-				log->writeString("[SetPreheatTimer] Disabled preheating. Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+				log.get(LogLevel::DEBUG) << "[SetPreheatTimer] Disabled preheating. Result: ";
+				log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+				log.get(LogLevel::DEBUG) << "\n";
 			} else {
-				log->writeString("[SetPreheatTimer] Duration: ")->writeLong(argLo / 30)->writeString("min Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+				log.get(LogLevel::DEBUG) << "[SetPreheatTimer] Duration: " << std::dec << (argLo / 30) << "min. Result: ";
+				log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+				log.get(LogLevel::DEBUG) << "\n";
 			}
 			break;
 		}
 		case FIXUP3D_CMD_SET_BED_TEMP:
 		{
-			log->writeString("[SetBedTemp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[SetBedTemp] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
-			log->writeString("[SetNozzle1Temp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[SetNozzle1Temp] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_SET_NOZZLE2_TEMP:
 		{
-			log->writeString("[SetNozzle2Temp] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[SetNozzle2Temp] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_WRITE_MEM_1:
@@ -508,23 +532,25 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		case FIXUP3D_CMD_WRITE_MEM_3:
 		{
 			UCHAR numBlocks = UPCMD_GetArgHi(command);
-			log->writeString("[WriteMem")->writeLong(numBlocks)->writeString("] Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[WriteMem" << std::dec << numBlocks << "] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		case FIXUP3D_CMD_NONE:
 		{
 			// Unknown command
-			log->writeString("[NoCmd 0x")->writeBinaryBuffer(&lastWriteCustom,2)
-				->writeString("] Args:")->writeBinaryBuffer(&lastWriteCustom+2,2)
-				->writeString(" Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[NoCmd 0x" << std::hex << lastWriteCustom << "] Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 		default:
 		{
 			// Unknown command
-			log->writeString("[UnknownCmd 0x")->writeBinaryBuffer(&command,2)
-				->writeString("] Args:")->writeBinaryBuffer(&argLong,4)
-				->writeString(" Result: ")->writeBinaryBuffer(buffer,lengthTransferred)->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[UnknownCmd 0x" << std::hex << command << "] Args: " << argLong << " Result: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
 	}
@@ -555,7 +581,9 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 		default:
 		{
 		#ifdef DEBUG_MEMWRITE
-			log->writeString("[WriteMem] Unknown MemBlock: ")->writeBinaryBuffer(memBlock, sizeof(FixUp3DMemBlock))->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[WriteMem] Unknown MemBlock: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, memBlock, sizeof(FixUp3DMemBlock));
+			log.get(LogLevel::DEBUG) << "\n";
 		#endif
 		}
 		break;
@@ -581,7 +609,7 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 			ULONG TargetTemperature = settings->getHeaterTemperature(memCurrentLayer);
 			if (TargetTemperature != temperature) {
 				// Override temperature!
-				log->writeString("[WriteMem] Overriding Temperature: ")->writeLong(temperature)->writeString("°C > ")->writeLong(TargetTemperature)->writeString("°C\r\n");
+				log.get(LogLevel::DEBUG) << "[WriteMem] Overriding Temperature: " << std::dec << temperature << "°C > " << TargetTemperature << "°C\n";
 				params.longs.lParam2 = TargetTemperature;
 			}
 		}
@@ -589,7 +617,9 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 		default:
 		{
 		#ifdef DEBUG_MEMWRITE
-			log->writeString("[WriteMem] Unknown MemBlock Parameter: ")->writeBinaryBuffer(&params, sizeof(FixUp3DMemBlockParams))->writeString("\r\n");
+			log.get(LogLevel::DEBUG) << "[WriteMem] Unknown MemBlock Parameter: ";
+			log.writeBinaryAsHex(LogLevel::DEBUG, &params, sizeof(FixUp3DMemBlockParams));
+			log.get(LogLevel::DEBUG) << "\n";
 		#endif
 		}
 		break;

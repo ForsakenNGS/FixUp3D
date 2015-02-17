@@ -11,7 +11,7 @@
 #include "winusbhelper.h"
 #include <queue>
 #include <fstream>
-#include "SimpleLogWriter.h"
+#include "Log.h"
 
 namespace Core {
 
@@ -168,8 +168,8 @@ private:
 
 	ULONG					interceptReply;
 
-	SimpleLogWriter*		log = NULL;
 	std::ofstream			fileMemDump;
+	Log						log;
 
 	USHORT					lastWriteCommand;
 	USHORT					lastWriteArgumentLo;
