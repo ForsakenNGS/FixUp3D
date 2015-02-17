@@ -45,7 +45,7 @@ PrinterIntercept::PrinterIntercept() : fileMemDump(), log("PrinterIntercept") {
 		//log = new Core::SimpleLogWriter(sFilename);
 #ifdef DEBUG_MEMWRITE
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\MemDump.dat"), sHomeDir);
-		fileMemDump.open(sFilename);
+		fileMemDump.open(sFilename, std::ios_base::binary | std::ios_base::out);
 #endif
 	}
 	log.addTarget("console", new Logging::ConsoleTarget(LogLevel::DEBUG));
@@ -559,7 +559,7 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 #ifdef DEBUG_MEMWRITE
 	if (fileMemDump.is_open()) {
-		fileMemDump.write(reinterpret_cast<char *>(memBlock), sizeof(FixUp3DMemBlock));
+		fileMemDump.write((char*)memBlock, sizeof(FixUp3DMemBlock));
 	}
 #endif
 	switch (memBlock->command) {
