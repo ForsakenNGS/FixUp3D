@@ -9,6 +9,7 @@ Future Features
 - Renameable print sets
 - Adding more print sets (up to 8 could be possible without major effort. to be checked!)
 - Lower bed after the print is done
+- Allow the window to be minimized or in background so it doesn't take up so much of the screen when you're working with a print
 
 General
 =======
@@ -51,11 +52,11 @@ The print sets can be changed by simply replacing the values you want to change 
 Known values and wild guesses:
 - "Nozzle Diameter": The diameter of the printers nozzle.
 - "Layer Thickness": The layer height for this set
-- "Scan Width": Wild guess: A factor for the extruder speed when printing the outer hull?
+- "Scan Width": Wild guess: The resulting width of a "line" when printing the outer hull / surface?
 - "Scan Times": ??? Always 1.0 for Up Mini
-- "Hatch Width": Wild guess: A factor for the extruder speed when printing the inner hull and infill?
+- "Hatch Width":  Wild guess: The resulting width of a "line" when printing the inner hull / infill?
 - "Hatch Space": Wild guess: A factor for the distance between the infill threads?
-- "Support Width": Wild guess: A factor for the extruder speed when printing the support?
+- "Support Width":  Wild guess: The resulting width of a "line" when printing the support?
 - "Support Space": Wild guess: A factor for the distance between the support "walls"?
 - "Support Layer": ??? Always 3.0 for Up Mini
 - "Scan Speed": This is the speed used for printing the outer hull of the object. It only affects the outer of the 2 outlines the printer draws.
@@ -65,4 +66,4 @@ Known values and wild guesses:
 - "Scan Scale": ??? Always 1.0 for Up Mini
 - "Hatch Scale": ??? Always 1.05 for Up Mini
 - "Support Scale": ??? Always 0.9 for Up Mini
-- "Feed Scale": This seems to be the (base?) speed value for the extruder. 
+- "Feed Scale": This seems to be the (base?) speed value for the extruder.
