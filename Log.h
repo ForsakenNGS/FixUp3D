@@ -12,6 +12,7 @@
 #include "logging/LogLevel.h"
 #include <string.h>
 #include <map>
+#include <iomanip>
 
 class Log {
 private:

@@ -17,6 +17,7 @@
 #include <Shlobj.h>
 #include <TCHAR.H>
 #include <stdio.h>
+#include <math.h>
 
 namespace Core {
 
@@ -63,6 +64,13 @@ PrinterIntercept::PrinterIntercept() : fileMemDump(), log("PrinterIntercept") {
 	temperatureNozzle1Base = 0;
 	temperatureNozzle2Base = 0;
 	temperatureNozzle3Base = 0;
+	memPosX = 0.0f;
+	memPosY = 0.0f;
+	memPosZ = 0.0f;
+	memSpeedX = 0.0f;
+	memSpeedY = 0.0f;
+	memSpeedZ = 0.0f;
+	memExtrudeSpeed = 0.0f;
 }
 
 PrinterIntercept::~PrinterIntercept() {
@@ -310,7 +318,6 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		{
 			PUCHAR pBuf = buffer;
 			ULONG len = bufferLength;
-			ULONG offset = 0;
 			for (;;) {
 				UCHAR numBlocks = *(pBuf + 1);
 				pBuf += 2; //JUMP OVER 2Fxx
@@ -594,7 +601,19 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 				memcpy(&memLastBlock, memBlock, sizeof(FixUp3DMemBlock));
 			} else {
 				// Second block
-				FixUp3DMemBlock* memBlockNext = memBlock + 1;
+				memSpeedX = memLastBlock.params.floats.fParam1;
+				memPosX = memLastBlock.params.floats.fParam2;
+				memSpeedY = memLastBlock.params.floats.fParam3;
+				memPosY = memLastBlock.params.floats.fParam4;
+				memSpeedZ = memBlock->params.floats.fParam1;
+				memPosZ = memBlock->params.floats.fParam2;
+				memExtrudeSpeed = memBlock->params.floats.fParam4 / memBlock->params.floats.fParam3;
+				log.get(LogLevel::INFO) << "[WriteMem] MOVE_FLOAT\t" << std::dec << std::setfill(' ')
+						<< "  X: " << std::setw(12) << memPosX << "mm (" << std::setw(12) << memSpeedX << "mm/s)"
+						<< "  Y:" << std::setw(12) << memPosY << "mm (" << std::setw(12) << memSpeedY << "mm/s)"
+						<< "  Z: " << std::setw(12) << memPosZ << "mm (" << std::setw(12) << memSpeedZ << "mm/s)"
+						<< "  E: " << std::setw(12) << memExtrudeSpeed << "mm/s\n";
+				/*
 				float speedX = memLastBlock.params.floats.fParam1;
 				float posX = memLastBlock.params.floats.fParam2;
 				float speedY = memLastBlock.params.floats.fParam3;
@@ -608,6 +627,7 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 						<< "\tY:" << posY << "(" << speedY << ")"
 						<< "\tZ: " << posZ << "(" << speedZ << ")"
 						<< "\tE: " << posE << "(" << speedE << ")" << "\n";
+				*/
 				// Clear prev block
 				memset(&memLastBlock, 0, sizeof(FixUp3DMemBlock));
 			}
@@ -615,19 +635,42 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 		break;
 		case FIXUP3D_MEM_CMD_MOVE_SHORT:
 		{
-			SHORT speedX = memBlock->params.shorts.uParam1;
-			SHORT posX = memBlock->params.shorts.uParam2;
-			SHORT speedY = memBlock->params.shorts.uParam3;
-			SHORT posY = memBlock->params.shorts.uParam4;
-			SHORT speedZ = memBlock->params.shorts.uParam5;
-			SHORT posZ = memBlock->params.shorts.uParam6;
-			SHORT speedE = memBlock->params.shorts.uParam7;
-			SHORT posE = memBlock->params.shorts.uParam8;
+			SHORT moveDivider = memBlock->params.shorts.wParam1;
+			SHORT moveTime = memBlock->params.shorts.wParam2;
+			float moveTimeSec = moveTime / 1000.0f;
+			SHORT moveX = memBlock->params.shorts.wParam3;
+			SHORT moveY = memBlock->params.shorts.wParam4;
+			SHORT moveZ = memBlock->params.shorts.wParam5;
+			SHORT moveE = memBlock->params.shorts.wParam6;
+			SHORT unknown7 = memBlock->params.shorts.wParam7;
+			SHORT unknown8 = memBlock->params.shorts.wParam8;
+			memSpeedX = (float)moveX / moveDivider / moveTimeSec;
+			memPosX += memSpeedX * moveTimeSec;
+			memSpeedY = (float)moveY / moveDivider / moveTimeSec;
+			memPosY += memSpeedY * moveTimeSec;
+			memSpeedZ = (float)moveZ / moveDivider / moveTimeSec;
+			memPosZ += memSpeedZ * moveTimeSec;
+			memExtrudeSpeed = (float)moveE / moveDivider * moveTimeSec;
+			log.get(LogLevel::INFO) << "[WriteMem] MOVE_SHORT\t" << std::dec << std::setfill(' ')
+					<< "  X: " << std::setw(12) << memPosX << "mm (" << std::setw(12) << memSpeedX << "mm/s)"
+					<< "  Y:" << std::setw(12) << memPosY << "mm (" << std::setw(12) << memSpeedY << "mm/s)"
+					<< "  Z: " << std::setw(12) << memPosZ << "mm (" << std::setw(12) << memSpeedZ << "mm/s)"
+					<< "  E: " << std::setw(12) << memExtrudeSpeed << "mm/s  XY: " << std::setw(12) << (fabsf(memSpeedX) + fabsf(memSpeedY)) << "  T: " << moveTime << "ms\n";
+			/*
+			SHORT unknown1 = memBlock->params.shorts.wParam1;
+			SHORT unknown2 = memBlock->params.shorts.wParam2;
+			SHORT moveX = memBlock->params.shorts.wParam3;
+			SHORT moveY = memBlock->params.shorts.wParam4;
+			SHORT moveZ = memBlock->params.shorts.wParam5;
+			SHORT moveE = memBlock->params.shorts.wParam6;
+			SHORT unknown7 = memBlock->params.shorts.wParam7;
+			SHORT unknown8 = memBlock->params.shorts.wParam8;
 			log.get(LogLevel::INFO) << "[WriteMem] MOVE_SHORT" << std::dec
-					<< "\tX: " << posX << "(" << speedX << ")"
-					<< "\tY:" << posY << "(" << speedY << ")"
-					<< "\tZ: " << posZ << "(" << speedZ << ")"
-					<< "\tE: " << posE << "(" << speedE << ")" << "\n";
+					<< "\t1: " << unknown1 << "\t2: " << unknown2
+					<< "\tX: " << moveX << "\tY: " << moveY
+					<< "\t5: " << moveZ << "\tE: " << moveE
+					<< "\t7: " << unknown7 << "\tZ: " << unknown8 << "\n";
+				*/
 		}
 		break;
 		case FIXUP3D_MEM_CMD_UNKNOWN5:

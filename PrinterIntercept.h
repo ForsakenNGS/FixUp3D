@@ -160,14 +160,14 @@ union	FixUp3DMemBlockParams {
 		ULONG	lParam4;
 	} longs;
 	struct	FixUp3DMemBlockShortParams {
-		SHORT	uParam1;
-		SHORT	uParam2;
-		SHORT	uParam3;
-		SHORT	uParam4;
-		SHORT	uParam5;
-		SHORT	uParam6;
-		SHORT	uParam7;
-		SHORT	uParam8;
+		SHORT	wParam2;
+		SHORT	wParam1;
+		SHORT	wParam4;
+		SHORT	wParam3;
+		SHORT	wParam6;
+		SHORT	wParam5;
+		SHORT	wParam8;
+		SHORT	wParam7;
 	} shorts;
 };
 
@@ -205,6 +205,13 @@ private:
 	ULONG					preheatStatus;
 	ULONG					memCurrentLayer;
 	FixUp3DMemBlock			memLastBlock;
+	float					memPosX;
+	float					memPosY;
+	float					memPosZ;
+	float					memSpeedX;
+	float					memSpeedY;
+	float					memSpeedZ;
+	float					memExtrudeSpeed;
 
 	void	addCustomCommand(FixUp3DCustomCommand &command);
 	void	addCustomCommandDelay(ULONG delayInMs);

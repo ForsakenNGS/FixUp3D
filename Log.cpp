@@ -41,22 +41,22 @@ void Log::writeName() {
 	// Output log level and category
 	switch (iLevel) {
 	case LogLevel::FATAL:
-		Log::getTarget() << "[FATAL]\t\t";
+		Log::getTarget() << "[FATAL]\t";
 		break;
 	case LogLevel::ERR0R:
-		Log::getTarget() << "[ERROR]\t\t";
+		Log::getTarget() << "[ERROR]\t";
 		break;
 	case LogLevel::WARNING:
-		Log::getTarget() << "[WARNING]\t";
+		Log::getTarget() << "[WARN]\t";
 		break;
 	case LogLevel::INFO:
-		Log::getTarget() << "[INFO]\t\t";
+		Log::getTarget() << "[INFO]\t";
+		break;
+	case LogLevel::DEBUG:
+		Log::getTarget() << "[DEBUG]\t";
 		break;
 	default:
-	case LogLevel::DEBUG:
-		Log::getTarget() << "[DEBUG]\t\t";
-		break;
-		Log::getTarget() << "[UNDEFINED]\t";
+		Log::getTarget() << "[UNDEF]\t";
 		break;
 	}
 	Log::getTarget() << sName << ": ";
