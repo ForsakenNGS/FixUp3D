@@ -17,18 +17,22 @@ namespace Logging {
 class LogTarget : public std::ostringstream {
 private:
 	int lvl;
+	int sectionCur;
+	int sections;
 	std::map<std::string,Target*> targets;
 public:
-	LogTarget(LogTarget& source);
-	LogTarget();
+	LogTarget(LogTarget& source, int bitSections);
+	LogTarget(int bitSections);
 	virtual ~LogTarget();
 
 	void addTarget(const std::string &name, Target* target);
 	void flush();
 	const int getLevel();
+	const int getSection();
 	const std::map<std::string,Target*> & getTargets();
 	Target* getTarget(const std::string &name);
 	void setLevel(int lvl);
+	void setSection(int bitSection);
 
 };
 

@@ -16,12 +16,17 @@ namespace Logging {
 /**
  * Custom copy constructor that creates a new stringstream (because it cant be copied)
  */
-LogTarget::LogTarget(LogTarget& source) {
+LogTarget::LogTarget(LogTarget& source, int bitSections) {
 	lvl = source.getLevel();
+	sectionCur = source.getSection();
+	sections = bitSections;
 	targets = source.getTargets();
 }
 
-LogTarget::LogTarget() {
+LogTarget::LogTarget(int bitSections) {
+	lvl = LogLevel::DEBUG;
+	sectionCur = LogSections::SECTION_ANY;
+	sections = bitSections;
 }
 
 LogTarget::~LogTarget() {
@@ -43,7 +48,7 @@ void LogTarget::flush() {
 	string str = this->str();
 	const char* data = str.c_str();
 	for (map<string,Target*>::const_iterator it = targets.begin(); it != targets.end(); it++) {
-		it->second->put(data, lvl);
+		it->second->put(data, lvl, sectionCur);
 	}
 	ostringstream::str(string());
 	ostringstream::clear();
@@ -51,6 +56,10 @@ void LogTarget::flush() {
 
 const int LogTarget::getLevel() {
 	return lvl;
+}
+
+const int LogTarget::getSection() {
+	return sectionCur;
 }
 
 const map<string,Target*> & LogTarget::getTargets() {
@@ -67,6 +76,10 @@ Target* LogTarget::getTarget(const std::string &name) {
 
 void LogTarget::setLevel(int lvl){
 	this->lvl = lvl;
+}
+
+void LogTarget::setSection(int bitSection){
+	this->sectionCur = bitSection;
 }
 
 } /* namespace Logging */

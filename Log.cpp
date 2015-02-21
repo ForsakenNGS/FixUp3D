@@ -19,6 +19,13 @@ LogTarget* Log::logTarget = NULL;
 
 Log::Log(const char* name) : sName(name) {
 	iLevel = 0;
+	iSections = LogSections::SECTION_ANY;
+	bWritename = true;
+}
+
+Log::Log(const char* name, int bitSections) : sName(name) {
+	iLevel = 0;
+	iSections = bitSections;
 	bWritename = true;
 }
 
@@ -77,9 +84,9 @@ void Log::addTarget(const string &name, Target* target) {
 
 LogTarget& Log::getTarget() {
 	if (logTarget == NULL) {
-		logTarget = new LogTarget();
+		logTarget = new LogTarget(LogSections::SECTION_ANY);
 		// TODO: Dynamic log level
-		logTarget->addTarget("console", new ConsoleTarget(LogLevel::DEBUG));
+		logTarget->addTarget("console", new ConsoleTarget(LogLevel::DEBUG, LogSections::SECTION_ANY));
 	}
 	return *logTarget;
 }

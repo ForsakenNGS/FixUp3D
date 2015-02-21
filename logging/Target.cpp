@@ -9,7 +9,7 @@
 
 namespace Logging {
 
-Target::Target(int lvl) : maxlvl(lvl) {
+Target::Target(int lvl, int bitSection) : maxlvl(lvl), section(bitSection) {
 
 }
 

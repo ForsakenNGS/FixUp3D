@@ -23,6 +23,7 @@ namespace Core {
 #define UPCMD_GetArgLo(Value)			(USHORT)( Value & 0xFF )
 #define UPCMD_GetArgHi(Value)			(USHORT)( (Value >> 8) & 0xFF )
 
+#define FIXUP3D_CMD_UNKNOWN46			0x46
 #define FIXUP3D_CMD_UNKNOWN53			0x53
 #define FIXUP3D_CMD_PROGRAM_GO			0x58
 #define FIXUP3D_CMD_PROGRAM_NEW			0x63
@@ -71,7 +72,6 @@ namespace Core {
 #define	FIXUP3D_CMD_SET_UNKNOWN0B		UPCMD(0x56,0x0B)
 #define	FIXUP3D_CMD_SET_PRINTER_STATUS	UPCMD(0x56,0x10)
 #define	FIXUP3D_CMD_SET_UNKNOWN14		UPCMD(0x56,0x14)
-#define	FIXUP3D_CMD_SET_UNKNOWN16		UPCMD(0x56,0x16)
 #define	FIXUP3D_CMD_SET_PREHEAT_TIMER	UPCMD(0x56,0x16)
 #define	FIXUP3D_CMD_SET_NOZZLE1_TEMP	UPCMD(0x56,0x39)
 #define	FIXUP3D_CMD_SET_NOZZLE2_TEMP	UPCMD(0x56,0x3A)
@@ -142,6 +142,7 @@ struct	FixUp3DCustomCommand {
 	USHORT			command;
 	USHORT			commandBytes;
 	UCHAR			arguments[8];
+	void*			argumentsPtr;
 	ULONG			argumentsLength;
 	ULONG			responseLength;
 };
@@ -188,7 +189,9 @@ private:
 	ULONG					interceptReply;
 
 	std::ofstream			fileMemDump;
+	std::ofstream			fileDebugCSV;
 	Log						log;
+	Log						logRaw;
 
 	USHORT					lastWriteCommand;
 	USHORT					lastWriteArgumentLo;
@@ -213,8 +216,6 @@ private:
 	float					memSpeedZ;
 	float					memExtrudeSpeed;
 
-	void	addCustomCommand(FixUp3DCustomCommand &command);
-	void	addCustomCommandDelay(ULONG delayInMs);
 	BOOL	sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command);
 	BOOL	handleUpCmdSend(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG bufferLength);
 	void	handleUpCmdReply(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred);
@@ -224,6 +225,9 @@ public:
 	PrinterIntercept();
 	virtual ~PrinterIntercept();
 	static PrinterIntercept* getInstance();
+
+	void	addCustomCommand(FixUp3DCustomCommand &command);
+	void	addCustomCommandDelay(ULONG delayInMs);
 
 	ULONG	handleUsbPreRead(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG bufferLength);
 	void	handleUsbRead(WINUSB_INTERFACE_HANDLE interfaceHandle, UCHAR pipeID, PUCHAR buffer, ULONG lengthTransferred);
@@ -237,6 +241,7 @@ public:
 	void	sendGetUnknown8E();
 	void	sendProgramNew();
 	void	sendProgramGo();
+	void	sendUnknown46();
 	void	sendUnknown53();
 	void	sendUnknown4C32();
 	void	sendUnknown4C33();
@@ -247,11 +252,14 @@ public:
 	void	sendUnknown7332();
 	void	sendUnknown7333();
 	void	setNozzle1Temp(ULONG temperature);
-	void	setUnknown10(ULONG value);
-	void	setUnknown14(ULONG value);
-	void	setUnknown16(ULONG value);
-	void	setUnknown8E(ULONG value);
 	void	setPreheatTimer(ULONG value);
+	void	setPrinterStatus(ULONG value);
+	void	setUnknown0A(ULONG value);
+	void	setUnknown0B(ULONG value);
+	void	setUnknown14(ULONG value);
+	void	setUnknown4C(ULONG value);
+	void	setUnknown4D(ULONG value);
+	void	setUnknown8E(ULONG value);
 	void	stopPrint();
 	void	printAgain();
 };

@@ -13,15 +13,15 @@ using namespace std;
 
 namespace Logging {
 
-ConsoleTarget::ConsoleTarget(const int lvl) : Target(lvl) {
+ConsoleTarget::ConsoleTarget(const int lvl, const int bitSection) : Target(lvl, bitSection) {
 	InitializeCriticalSection(&m_criticalSection);
 }
 
 ConsoleTarget::~ConsoleTarget() {
 }
 
-void ConsoleTarget::put(const char* str, const int lvl){
-	if (lvl <= maxlvl) {
+void ConsoleTarget::put(const char* str, const int lvl, const int bitSection){
+	if ((lvl <= maxlvl) && ((section & bitSection) > 0)) {
 	    EnterCriticalSection(&m_criticalSection);
 		switch (lvl) {
 		case LogLevel::FATAL:	// Red

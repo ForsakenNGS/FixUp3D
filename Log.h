@@ -10,6 +10,7 @@
 
 #include "logging/LogTarget.h"
 #include "logging/LogLevel.h"
+#include "logging/LogSections.h"
 #include <string.h>
 #include <map>
 #include <iomanip>
@@ -20,11 +21,14 @@ private:
 public:
 	bool bWritename;
 	int iLevel;
+	int iSections;
 	const char* sName;
 
 	Log(const char* name);
+	Log(const char* name, int bitSections);
 	virtual ~Log();
 	Log& operator<<(const char* val) {
+		Log::getTarget().setSection(iSections);
 		if (bWritename) {
 			Log::getTarget().setLevel(iLevel);
 			writeName();
@@ -42,6 +46,7 @@ public:
 	void writeBinaryAsHex(const int level, void* buffer, unsigned int bufferLength);
 
 	static void addTarget(const std::string &name, Logging::Target* target);
+	static void addTarget(const std::string &name, Logging::Target* target, int bitSections);
 	static Logging::LogTarget& getTarget();
 	static Logging::Target* getTarget(const std::string &name);
 };

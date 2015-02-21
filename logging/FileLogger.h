@@ -12,9 +12,6 @@
 #include <windows.h>
 #include <fstream>
 
-// 1 MB
-#define MAX_LOG_FILE_SIZE		1048576
-
 namespace Logging {
 
 
@@ -23,10 +20,11 @@ private:
     CRITICAL_SECTION 		m_criticalSection;
 	std::ofstream outf;
 public:
-	FileLogger(const char* filename, const int lvl);
+	FileLogger(const char* filename, const int lvl, const int bitSection);
+	FileLogger(const char* filename, const std::ios_base::openmode mode, const int lvl, const int bitSection);
 	virtual ~FileLogger();
 
-	virtual void put(const char* str, const int lvl);
+	virtual void put(const char* str, const int lvl, const int bitSection);
 };
 
 } /* namespace Logging */

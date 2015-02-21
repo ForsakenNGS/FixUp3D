@@ -12,6 +12,18 @@
 #include <stdio.h>
 #include <tchar.h>
 
+#include "Log.h"
+#include "logging/ConsoleTarget.h"
+#include "logging/FileLogger.h"
+
+#include <direct.h>
+#include <Shlobj.h>
+#include <sys/stat.h>
+
+// 1 MB
+#define MAX_LOG_FILE_SIZE		1048576
+
+
 using namespace std;
 
 static const TCHAR szWindowClass[] = TEXT("FixUp3DCLS");
@@ -34,6 +46,33 @@ extern "C" BOOLEAN WINAPI DllMain(HINSTANCE hDllHandle, DWORD nReason, LPVOID Re
 				MessageBox(NULL, TEXT("Failed to create window thread"), TEXT("FixUp3D"), MB_OK);
 				return FALSE;
 			}
+
+			// Initialize log targets
+			TCHAR sHomeDir[MAX_PATH];
+			TCHAR sFilename[MAX_PATH];
+			if(SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, 0, sHomeDir))) {
+				_stprintf(sFilename, TEXT("%s\\UpUsbIntercept"), sHomeDir);
+				// Ensure directory exists
+				_mkdir(sFilename);
+				// Create log writer
+				_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\PrinterIntercept.log"), sHomeDir);
+				// Check log size
+			    struct stat stat_buf;
+			    int rc = stat(sFilename, &stat_buf);
+			    // Add file target
+			    if ((rc != 0) || (stat_buf.st_size > MAX_LOG_FILE_SIZE)) {
+			    	// File does not exists or is too big, overwrite
+					Log::addTarget("file_default", new Logging::FileLogger(sFilename, ios_base::out, LogLevel::DEBUG, LogSections::SECTION_DEFAULT));
+			    } else {
+			    	// File exists and is below max size, append
+			    	Log::addTarget("file_default", new Logging::FileLogger(sFilename, ios_base::app | ios_base::out, LogLevel::DEBUG, LogSections::SECTION_DEFAULT));
+			    }
+			    // Raw usb log
+				_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\UsbRaw.log"), sHomeDir);
+				Log::addTarget("file_usb_raw", new Logging::FileLogger(sFilename, ios_base::out, LogLevel::DEBUG, LogSections::SECTION_USB_RAW));
+			}
+			// Generic console log
+			Log::addTarget("console", new Logging::ConsoleTarget(LogLevel::INFO, LogSections::SECTION_ANY));
 		}
 		break;
 

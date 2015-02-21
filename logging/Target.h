@@ -13,11 +13,12 @@ namespace Logging {
 class Target {
 protected:
 	int maxlvl;
+	int	section;
 public:
-	Target(int lvl);
+	Target(int lvl, int bitSection);
 	virtual ~Target();
 
-	virtual void put(const char* str, int lvl) = 0;
+	virtual void put(const char* str, int lvl, const int bitSection) = 0;
 	virtual const char* getBuffer();
 };
 
