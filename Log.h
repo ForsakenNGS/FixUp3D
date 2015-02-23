@@ -43,7 +43,7 @@ public:
 
 	Log& get(const int level);
 	void writeName();
-	void writeBinaryAsHex(const int level, void* buffer, unsigned int bufferLength);
+	void writeBinaryAsHex(const int level, const void* buffer, unsigned int bufferLength);
 
 	static void addTarget(const std::string &name, Logging::Target* target);
 	static void addTarget(const std::string &name, Logging::Target* target, int bitSections);

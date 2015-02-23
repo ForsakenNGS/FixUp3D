@@ -69,7 +69,7 @@ void Log::writeName() {
 	Log::getTarget() << sName << ": ";
 }
 
-void Log::writeBinaryAsHex(const int level, void* buffer, unsigned int bufferLength) {
+void Log::writeBinaryAsHex(const int level, const void* buffer, unsigned int bufferLength) {
 	char	sBuffer[2];
 	Log&	logTarget = this->get(level);
 	for (ULONG i = 0; i < bufferLength; i++) {

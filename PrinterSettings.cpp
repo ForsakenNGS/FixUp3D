@@ -7,6 +7,7 @@
 
 #include "PrinterSettings.h"
 #include "PrinterIntercept.h"
+#include "UpProgram.h"
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
@@ -271,6 +272,25 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 					delete[] fileOpenStruct.lpstrFile;
 				}
 				if (LOWORD(wParam) == IDC_BUTTON_SEND_GCODE) {
+					UpProgram		testProgram(250, 30, 105);
+					{
+						// Layer 0
+						UpProgramLayer& layer1 = testProgram.addLayer(1, 20, 10, 0.0f);
+						layer1.jumpToZ(-60.04f, -10000.0f, -10.0f, 10000.0f);
+						layer1.jumpToXY(-52.0f, 123.0f, 20.0f, 123.0f);
+						layer1.jumpToZ(-61.04f, -10000.0f, 10.0f, 10000.0f);
+						layer1.unknown5(500);
+						layer1.jumpTo(-32.0f, 123.0f, 80.0f, 123.0f, -61.04f, 10000.0f, 0.0f, 10000.0f);
+						layer1.unknown5(1);
+						layer1.setParam(FIXUP3D_MEM_PARAM_UNKNOWN11, 1);
+						layer1.setParam(FIXUP3D_MEM_PARAM_MOTORS_OFF, 0);
+						layer1.setParam(FIXUP3D_MEM_PARAM_TIME_REMAINING, 0);
+						layer1.setParam(FIXUP3D_MEM_PARAM_TIME_PERCENT, 100);
+					}
+					testProgram.writeToPrinter();
+					testProgram.clearLayers();
+					// TODO: Convert gcode
+					/*
 					OPENFILENAME	fileOpenStruct;
 					ZeroMemory(&fileOpenStruct, sizeof(fileOpenStruct));
 					fileOpenStruct.lStructSize = sizeof(fileOpenStruct);
@@ -284,6 +304,7 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 						PrinterIntercept::getInstance()->sendGcode(fileOpenStruct.lpstrFile);
 					}
 					delete[] fileOpenStruct.lpstrFile;
+					*/
 				}
 				if (LOWORD(wParam) == IDC_BUTTON_SET_TEMP) {
 					// Manual temperature set requested

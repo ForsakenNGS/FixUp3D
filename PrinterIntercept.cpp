@@ -44,7 +44,7 @@ PrinterIntercept::PrinterIntercept() : fileMemDump(), fileDebugCSV(), log("Print
 		fileMemDump.open(sFilename, std::ios_base::binary | std::ios_base::out);
 		_stprintf(sFilename, TEXT("%s\\UpUsbIntercept\\debug.csv"), sHomeDir);
 		fileDebugCSV.open(sFilename, std::ios_base::out);
-		fileDebugCSV << "a1;v1;v2;v3;v5;v6;v7;v8;v9;v10;v11;v12;v13;v14;v15;t1;t2;t3\n";
+		fileDebugCSV << "Speed;Divider;X;Y;E\n";
 		fileDebugCSV.flush();
 	}
 #endif
@@ -142,17 +142,184 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
 		log.writeBinaryAsHex(LogLevel::DEBUG, command.arguments, command.argumentsLength);
 		log.get(LogLevel::DEBUG) << "\n";
 	} else {
+		logUpCmdSend(command.command, cmdBuffer, cmdBufferLen);
 		log.get(LogLevel::DEBUG) << "[CustomCmd] Wrote command: 0x" << std::hex << command.command << " ...\n";
-		UCHAR	respBuffer[command.responseLength];
-		if ((command.responseLength > 0) && !WinUsb_ReadPipe(interfaceHandle, 0x81, respBuffer, command.responseLength, &transferLen, NULL)) {
-			log.get(LogLevel::DEBUG) << "[CustomCmd] Failed to read custom command reply! Command: 0x" << std::hex << command.command << ".\n";
+		if (command.responseLength > 0) {
+			UCHAR	respBuffer[command.responseLength];
+			if (!WinUsb_ReadPipe(interfaceHandle, 0x81, respBuffer, command.responseLength, &transferLen, NULL)) {
+				log.get(LogLevel::DEBUG) << "[CustomCmd] Failed to read custom command reply! Command: 0x" << std::hex << command.command << ".\n";
+			} else {
+				logUpCmdReply(command.command, respBuffer, transferLen);
+				log.get(LogLevel::DEBUG) << "[CustomCmd] Command 0x" << std::hex << command.command << " successfully sent!\n";
+				log.get(LogLevel::DEBUG) << "Result: ";
+				log.writeBinaryAsHex(LogLevel::DEBUG, respBuffer, transferLen);
+				log.get(LogLevel::DEBUG) << "\n";
+			}
 		} else {
-			log.get(LogLevel::DEBUG) << "[CustomCmd] Command 0x" << std::hex << command.command << " successfully sent!\nResult: ";
-			log.writeBinaryAsHex(LogLevel::DEBUG, respBuffer, transferLen);
-			log.get(LogLevel::DEBUG) << "\n";
+			log.get(LogLevel::DEBUG) << "[CustomCmd] Command 0x" << std::hex << command.command << " successfully sent!\n";
 		}
 	}
 	return true;
+}
+
+
+
+/**
+ * Called when a command is sent to the up printer.
+ * Return false to prevent sending this command.
+ */
+BOOL PrinterIntercept::logUpCmdSend(USHORT command, PUCHAR buffer, ULONG bufferLength) {
+	PrinterSettings*	settings = PrinterSettings::getInstance();
+	switch (command) {
+		case FIXUP3D_CMD_GET_PRINTERPARAM:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> GET_PRINTERPARAM: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_SET_BED_TEMP:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_BED_TEMP: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_NOZZLE1_TEMP: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_SET_NOZZLE2_TEMP:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_NOZZLE2_TEMP: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_IDBLK:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_IDBLK: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_INPORTBLK:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_INPORTBLK: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_OUTPORTBLK:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_OUTPORTBLK: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_SETBLK:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_SETBLK: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_UNK00:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK00: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_UNK01:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK01: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_COMMIT_UNK04:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK04: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_PROGRAM_NEW:	// Called after sending print data
+		{
+			logRaw.get(LogLevel::DEBUG) << "> PROGRAM_NEW: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_PROGRAM_GO:	// Called after sending print data
+		{
+			logRaw.get(LogLevel::DEBUG) << "> PROGRAM_GO: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_SET_PREHEAT_TIMER:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_PREHEAT_TIMER: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+
+		case FIXUP3D_CMD_SET_PRINTER_STATUS:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_PRINTER_STATUS: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_SET_UNKNOWN0A:
+		case FIXUP3D_CMD_SET_UNKNOWN0B:
+		case FIXUP3D_CMD_SET_UNKNOWN14:
+		case FIXUP3D_CMD_SET_UNKNOWN4C:
+		case FIXUP3D_CMD_SET_UNKNOWN4D:
+		case FIXUP3D_CMD_SET_UNKNOWN8E:
+		case FIXUP3D_CMD_SET_UNKNOWN94:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> SET_UNKNOWN_" << std::hex << (command >> 8) << ": ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+		}
+		break;
+		case FIXUP3D_CMD_WRITE_MEM_1:
+		case FIXUP3D_CMD_WRITE_MEM_2:
+		case FIXUP3D_CMD_WRITE_MEM_3:
+		{
+			logRaw.get(LogLevel::DEBUG) << "> WRITE_MEM: ";
+			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+			logRaw.get(LogLevel::DEBUG) << "\n";
+			logRaw.get(LogLevel::DEBUG) << "  LENGTH: " << bufferLength << "\n";
+		}
+		break;
+		default:
+			if ((command & 0xFF) == 0x76) {
+				logRaw.get(LogLevel::DEBUG) << "> GET_" << std::hex << (command >> 8) << ": ";
+				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+				logRaw.get(LogLevel::DEBUG) << "\n";
+			} else {
+				logRaw.get(LogLevel::DEBUG) << "> UNKNOWN: ";
+				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+				logRaw.get(LogLevel::DEBUG) << "\n";
+			}
+			break;
+	}
+	return true;
+}
+
+void PrinterIntercept::logUpCmdReply(USHORT command, PUCHAR buffer, ULONG lengthTransferred) {
+	PrinterSettings* settings = PrinterSettings::getInstance();
+	logRaw.get(LogLevel::DEBUG) << "< REPLY: ";
+	logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+	logRaw.get(LogLevel::DEBUG) << "\n";
 }
 
 /**
@@ -214,10 +381,60 @@ BOOL PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, U
 	if (!customCommands.empty()) {
 		customCommandsSending = true;
 		while (!customCommands.empty()) {
-			if (sendCustomCommand(interfaceHandle, customCommands.front())) {
-				customCommands.pop();
-			} else {
-				break;
+			FixUp3DCustomCommand& command = customCommands.front();
+			if (command.command == FIXUP3D_CMD_WRITE_MEM_3) {
+				// Merge memwrites
+				UCHAR	memWriteBuffer[2048];
+				ULONG	memWriteTransfered = 0;
+				ULONG	memWriteSize = 0;
+				memset(memWriteBuffer, 0, 2048);
+				while ( ((memWriteSize + 2 + command.commandBytes + command.argumentsLength) < 2048)
+						&& ((command.command == FIXUP3D_CMD_WRITE_MEM_1) || (command.command == FIXUP3D_CMD_WRITE_MEM_2) || (command.command == FIXUP3D_CMD_WRITE_MEM_3)) ) {
+					if (memWriteSize > 0) {
+						// Add 2 bytes padding between each command
+						memWriteSize += 2;
+					}
+					// Write command to buffer
+					memcpy(memWriteBuffer + memWriteSize, &command.command, command.commandBytes);
+					memWriteSize += command.commandBytes;
+					// Write arguments to buffer
+					if (command.argumentsLength > 8) {
+						memcpy(memWriteBuffer + memWriteSize, command.argumentsPtr, command.argumentsLength);
+						free(command.argumentsPtr);
+						command.argumentsPtr = NULL;
+					} else {
+						memcpy(memWriteBuffer + memWriteSize, &command.arguments, command.argumentsLength);
+					}
+					memWriteSize += command.argumentsLength;
+					// Remove command from queue
+					customCommands.pop();
+					if (!customCommands.empty()) {
+						// Next command
+						command = customCommands.front();
+					} else {
+						// Leave while
+						command.command = FIXUP3D_CMD_NONE;
+					}
+				}
+				// Write prepared command buffer
+				if (!WinUsb_WritePipe(interfaceHandle, 0x01, memWriteBuffer, memWriteSize, &memWriteTransfered, NULL)) {
+					log.get(LogLevel::DEBUG) << "[CustomCmd] Failed to send program data: ";
+					log.writeBinaryAsHex(LogLevel::DEBUG, memWriteBuffer, memWriteSize);
+					log.get(LogLevel::DEBUG) << "\n";
+				} else {
+					logRaw.get(LogLevel::DEBUG) << "> WRITE_MEM: ";
+					logRaw.writeBinaryAsHex(LogLevel::DEBUG, memWriteBuffer, memWriteTransfered);
+					logRaw.get(LogLevel::DEBUG) << "\n";
+					logRaw.get(LogLevel::DEBUG) << "  LENGTH: " << memWriteTransfered << "/" << memWriteSize << "\n";
+				}
+			}
+			if (command.command != FIXUP3D_CMD_NONE) {
+				// Send other commands
+				if (sendCustomCommand(interfaceHandle, customCommands.front())) {
+					customCommands.pop();
+				} else {
+					break;
+				}
 			}
 		}
 		customCommandsSending = false;
@@ -257,8 +474,8 @@ BOOL PrinterIntercept::handleUsbWrite(WINUSB_INTERFACE_HANDLE interfaceHandle, U
  */
 BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG bufferLength) {
 	PrinterSettings*	settings = PrinterSettings::getInstance();
-	switch (lastWriteCommand) {
-
+	logUpCmdSend(command, buffer, bufferLength);
+	switch (command) {
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
 		{
 			//if we do not have print sets from real printer we initiate the real command, init play back of our sets otherwise
@@ -272,15 +489,11 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 			}
 		}
 		break;
-
 		case FIXUP3D_CMD_SET_BED_TEMP:
 		{
-			logRaw.get(LogLevel::DEBUG) << "> SET_BED_TEMP: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
+			// TODO: Override bed temp
 		}
 		break;
-
 		case FIXUP3D_CMD_SET_NOZZLE1_TEMP:
 		{
 			temperatureNozzle1Base = argLong;
@@ -291,12 +504,8 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 				log.get(LogLevel::DEBUG) << "[SetNozzle1Temp] Overriding Temperature: " << std::dec << argLong << "°C > " << TargetTemperature << "°C\n";
 				UPCMD_SetArgLong(buffer, TargetTemperature);
 			}
-			logRaw.get(LogLevel::DEBUG) << "> SET_NOZZLE1_TEMP: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
 		}
 		break;
-
 		case FIXUP3D_CMD_SET_NOZZLE2_TEMP:
 		{
 			temperatureNozzle2Base = argLong;
@@ -307,100 +516,13 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 				log.get(LogLevel::DEBUG) << "[SetNozzle2Temp] Overriding Temperature: " << std::dec << argLong << "°C > " << TargetTemperature << "°C\n";
 				UPCMD_SetArgLong(buffer, TargetTemperature);
 			}
-			logRaw.get(LogLevel::DEBUG) << "> SET_NOZZLE2_TEMP: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_IDBLK:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_IDBLK: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_INPORTBLK:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_INPORTBLK: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_OUTPORTBLK:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_OUTPORTBLK: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_SETBLK:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_SETBLK: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_UNK00:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK00: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_UNK01:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK01: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_COMMIT_UNK04:
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> CMD_COMMIT_UNK04: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-		case FIXUP3D_CMD_PROGRAM_NEW:	// Called after sending print data
-		{
-			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> PROGRAM_NEW: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
 		}
 		break;
 		case FIXUP3D_CMD_PROGRAM_GO:	// Called after sending print data
 		{
 			memCurrentLayer = 0;
-			logRaw.get(LogLevel::DEBUG) << "> PROGRAM_GO: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
 		}
 		break;
-
-		case FIXUP3D_CMD_SET_PREHEAT_TIMER:
-		{
-			logRaw.get(LogLevel::DEBUG) << "> SET_PREHEAT_TIMER: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-
-		case FIXUP3D_CMD_SET_PRINTER_STATUS:
-		{
-			logRaw.get(LogLevel::DEBUG) << "> SET_PRINTER_STATUS: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-		}
-		break;
-
 		case FIXUP3D_CMD_SET_UNKNOWN0A:
 		case FIXUP3D_CMD_SET_UNKNOWN0B:
 		case FIXUP3D_CMD_SET_UNKNOWN14:
@@ -409,9 +531,6 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		case FIXUP3D_CMD_SET_UNKNOWN8E:
 		case FIXUP3D_CMD_SET_UNKNOWN94:
 		{
-			logRaw.get(LogLevel::DEBUG) << "> SET_UNKNOWN_" << std::hex << (command >> 8) << ": ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
 			log.get(LogLevel::DEBUG) << "[SetUnknown" << std::hex << command << "] Data: ";
 			log.writeBinaryAsHex(LogLevel::DEBUG, buffer+2, bufferLength-2);
 			log.get(LogLevel::DEBUG) << "\n";
@@ -421,9 +540,6 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 		case FIXUP3D_CMD_WRITE_MEM_2:
 		case FIXUP3D_CMD_WRITE_MEM_3:
 		{
-			logRaw.get(LogLevel::DEBUG) << "> WRITE_MEM: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
 			PUCHAR pBuf = buffer;
 			ULONG len = bufferLength;
 			for (;;) {
@@ -454,15 +570,6 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 			break;
 		}
 		default:
-			if ((command & 0xFF) == 0x76) {
-				logRaw.get(LogLevel::DEBUG) << "> GET_" << std::hex << (command >> 8) << ": ";
-				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-				logRaw.get(LogLevel::DEBUG) << "\n";
-			} else {
-				logRaw.get(LogLevel::DEBUG) << "> UNKNOWN: ";
-				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-				logRaw.get(LogLevel::DEBUG) << "\n";
-			}
 			break;
 	}
 	return true;
@@ -470,9 +577,7 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 
 void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT argHi, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred) {
 	PrinterSettings* settings = PrinterSettings::getInstance();
-	logRaw.get(LogLevel::DEBUG) << "< REPLY: ";
-	logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
-	logRaw.get(LogLevel::DEBUG) << "\n";
+	logUpCmdReply(command, buffer, lengthTransferred);
 	switch (command)
 	{
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
@@ -732,7 +837,7 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 					<< "  X: " << std::setw(12) << memPosX << "mm (" << std::setw(12) << memSpeedX << "mm/s)"
 					<< "  Y:" << std::setw(12) << memPosY << "mm (" << std::setw(12) << memSpeedY << "mm/s)"
 					<< "  Z: " << std::setw(12) << memPosZ << "mm (" << std::setw(12) << memSpeedZ << "mm/s)"
-					<< "  E: " << std::setw(12) << memExtrudeSpeed << "mm/s\n";
+					<< "  E: " << std::setw(12) << memBlock->params.floats.fParam4 << "mm (" << std::setw(12) << memBlock->params.floats.fParam3 << "mm/s\n";
 				/*
 				float speedX = memLastBlock.params.floats.fParam1;
 				float posX = memLastBlock.params.floats.fParam2;
@@ -755,68 +860,52 @@ void PrinterIntercept::handleUpMemBlock(FixUp3DMemBlock* memBlock) {
 		break;
 		case FIXUP3D_MEM_CMD_MOVE_SHORT:
 		{
-			SHORT moveDivider = memBlock->params.shorts.wParam1 / 10;
-			SHORT moveTime = memBlock->params.shorts.wParam2;
-			SHORT moveDistY = memBlock->params.shorts.wParam3;
-			SHORT moveDistX = memBlock->params.shorts.wParam4;
-			SHORT moveDistZ = memBlock->params.shorts.wParam5;
-			SHORT moveDistE = memBlock->params.shorts.wParam6;
-			SHORT moveUnknown1 = memBlock->params.shorts.wParam7;
-			SHORT moveUnknown2 = memBlock->params.shorts.wParam8;
-			memSpeedX = (float)moveDistX / moveDivider * moveTime;
-			memPosX += (float)moveDistX / moveDivider;
-			memSpeedY = (float)moveDistY / moveDivider * moveTime;
-			memPosY += (float)moveDistY / moveDivider;
-			memSpeedZ = (float)moveDistZ / moveDivider * moveTime;
-			memPosZ += (float)moveDistZ / moveDivider;
-			memExtrudeSpeed = (float)moveDistE / moveDivider;
+			int32_t moveSpeed = memBlock->params.shorts.wParam1;
+			int32_t moveDivider = memBlock->params.shorts.wParam2;
+			int32_t p3 = memBlock->params.shorts.wParam3;
+			int32_t p4 = memBlock->params.shorts.wParam4;
+			int32_t p5 = memBlock->params.shorts.wParam5;
+			int32_t p6 = memBlock->params.shorts.wParam6;
+			int32_t p7 = memBlock->params.shorts.wParam7;
+			int32_t p8 = memBlock->params.shorts.wParam8;
+			int32_t v10 = (int32_t)0xFFFFFFF / moveSpeed;
+			int32_t v13 = moveSpeed*(moveSpeed - 1);
+			double moveDistX = ((( (p3 + v10) * moveSpeed ) + ((v13*p6)*2) - 511 - moveSpeed*v10) / 512.0) / 850.0;
+			double moveDistY = ((( (p4 + v10) * moveSpeed ) + ((v13*p7)*2) - 511 - moveSpeed*v10) / 512.0) / 850.0;
+			double moveDistE = ((( (p5 + v10) * moveSpeed ) + ((v13*p8)*2) - 511 - moveSpeed*v10) / 512.0) / 40.0;
+			memSpeedX = moveDistX / moveSpeed;
+			memPosX += moveDistX;
+			memSpeedY = moveDistY / moveSpeed;
+			memPosY += moveDistY;
+			memExtrudeSpeed = (float)moveDistE;
 			log.get(LogLevel::INFO) << "[WriteMem] MOVE_SHORT\t" << std::dec << std::setfill(' ')
 				<< "  X: " << std::setw(12) << memPosX << "mm (" << std::setw(12) << memSpeedX << "mm/s)"
 				<< "  Y:" << std::setw(12) << memPosY << "mm (" << std::setw(12) << memSpeedY << "mm/s)"
-				<< "  Z: " << std::setw(12) << memPosZ << "mm (" << std::setw(12) << memSpeedZ << "mm/s)"
 				<< "  E: " << std::setw(12) << memExtrudeSpeed << "mm/s  XY: " << std::setw(12) << (fabsf(memSpeedX) + fabsf(memSpeedY)) << "  T: " << moveDistE << "ms\n";
-
-			//int a1 = memBlock->params.shorts.wParam1;
-			//int a1 = memBlock->params.shorts.wParam1 | (memBlock->params.shorts.wParam2 << 16);
-			//int a1 = memBlock->params.shorts.wParam2 | (memBlock->params.shorts.wParam1 << 16);
-			DWORD a1 = memBlock->params.shorts.wParam1;
-			//DWORD a1 = memBlock->params.shorts.wParam1 | (memBlock->params.shorts.wParam2 << 16);
-			//DWORD a1 = memBlock->params.shorts.wParam2 | (memBlock->params.shorts.wParam1 << 16);
-			int v5 = memBlock->params.shorts.wParam6;									// P6 = v5 = (signed int)floor(*(double *)(a1 + 56) * 512.0);
-			int v6 = memBlock->params.shorts.wParam7;									// P7 = v6 = (signed int)floor(*(double *)(a1 + 64) * 512.0);
-			int v7 = memBlock->params.shorts.wParam8;									// P8 = v7 = (signed int)floor(*(double *)(a1 + 80) * 512.0);
-			int v8 = v7;																// v8 = v7
-			int v9 = a1;																// v9 = *(_DWORD*)a1
-			int v10 = (signed int)0xFFFFFFF / a1;										// v10 = (signed int)0xFFFFFFFu / *(_DWORD *)a1
-			int v11 = v10;																// v11 = v10
-			int v13 = v9 * (v9 - 1);													// v13 = v9 * (v9 - 1);
-			int v12 = (memBlock->params.shorts.wParam3 + v11) * a1 + (v13 * v5 >> 1);	// P3 = (v12 - (v13 * v5 >> 1)) / *(_DWORD *)a1 - v11
-			int v14 = ((int)memBlock->params.shorts.wParam4 + v11) * v9;				// P4 = v14 / v9 - v11
-			int v15 = (int)memBlock->params.shorts.wParam5 + v11;						// P5 = v15 - v11
-			int v1 = (v12 - 511 - a1 * v10) >> 9;										// v12 = *(_DWORD *)a1 * v10 + (v1 << 9) + 511;
-			int v2 = (v14 - 511 - a1 * v10 + (v13 * v6 >> 1)) >> 9;						// v14 = *(_DWORD *)a1 * v10 + (v2 << 9) + 511 - (v13 * v6 >> 1);
-			int v3 = (v15 * a1 - 511 - a1 * v10 + (v8 * v13 >> 1)) >> 9;				// v15 = (*(_DWORD *)a1 * v10 + (v3 << 9) + 511 - (v8 * v13 >> 1)) / *(_DWORD *)a1;
-			float t1 = *(float*)&v1;
-			float t2 = *(float*)&v2;
-			float t3 = *(float*)&v3;
-			fileDebugCSV << a1 << ";" << v1 << ";" << v2 << ";" << v3 << ";" << v5 << ";" << v6 << ";" << v7 << ";" << v8 << ";"
-					<< v9 << ";" << v10 << ";" << v11 << ";" << v12 << ";" << v13 << ";" << v14 << ";" << v15 << ";" << t1 << ";" << t2 << ";" << t3 << "\n";
+			fileDebugCSV << moveSpeed << ";" << moveDivider << ";" << moveDistX << ";" << moveDistY << ";"  << moveDistE << "\n";
 			fileDebugCSV.flush();
 			/*
-			SHORT unknown1 = memBlock->params.shorts.wParam1;
-			SHORT unknown2 = memBlock->params.shorts.wParam2;
-			SHORT moveX = memBlock->params.shorts.wParam3;
-			SHORT moveY = memBlock->params.shorts.wParam4;
-			SHORT moveZ = memBlock->params.shorts.wParam5;
-			SHORT moveE = memBlock->params.shorts.wParam6;
-			SHORT unknown7 = memBlock->params.shorts.wParam7;
-			SHORT unknown8 = memBlock->params.shorts.wParam8;
-			log.get(LogLevel::INFO) << "[WriteMem] MOVE_SHORT" << std::dec
-					<< "\t1: " << unknown1 << "\t2: " << unknown2
-					<< "\tX: " << moveX << "\tY: " << moveY
-					<< "\t5: " << moveZ << "\tE: " << moveE
-					<< "\t7: " << unknown7 << "\tZ: " << unknown8 << "\n";
-				*/
+			int32_t moveSpeed = memBlock->params.shorts.wParam1;
+			int32_t moveDivider = memBlock->params.shorts.wParam2;
+			int32_t p3 = memBlock->params.shorts.wParam3;
+			int32_t p4 = memBlock->params.shorts.wParam4;
+			int32_t p5 = memBlock->params.shorts.wParam5;
+			int32_t p6 = memBlock->params.shorts.wParam6;
+			int32_t p7 = memBlock->params.shorts.wParam7;
+			int32_t p8 = memBlock->params.shorts.wParam8;
+			 int32_t v10 = (int32_t)0xFFFFFFF / moveSpeed;
+			 int32_t v13 = moveSpeed*(moveSpeed - 1);
+
+			 int32_t r1 = (( (p3 + v10) * p1 ) + ((v13*p6)/2) - 511 - p1*v10)/512.0;
+			 int32_t r2 = (( (p4 + v10) * p1 ) + ((v13*p7)/2) - 511 - p1*v10)/512.0;
+			 int32_t r3 = (( (p5 + v10) * p1 ) + ((v13*p8)/2) - 511 - p1*v10)/512.0;
+
+			 double r4 = p6/512.0;
+			 double r5 = p7/512.0;
+			 double r6 = p8/512.0;
+			fileDebugCSV << p1 << ";" << p2 << ";" << v10 << ";" << v13 << ";" << ((float)r1 / p1) << ";" << r2 << ";" << r3 << ";" << r4 << ";" << r5 << ";" << r6 << "\n";
+			fileDebugCSV.flush();
+			*/
 		}
 		break;
 		case FIXUP3D_MEM_CMD_UNKNOWN5:
@@ -906,9 +995,9 @@ void PrinterIntercept::handleUpMemBlock_SetParam(FixUp3DMemBlockParams& params) 
 			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Nozzle 2 Temperature " << std::dec << temperature << "°C\n";
 		}
 		break;
-		case FIXUP3D_MEM_CMD_MOTORS_OFF:
+		case FIXUP3D_MEM_PARAM_MOTORS_OFF:
 		{
-			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Disable Servos? " << params.longs.lParam1 << "\n";
+			log.get(LogLevel::INFO) << "[WriteMem] SET_PARAM Disable Servos? " << params.longs.lParam2 << "\n";
 		}
 		break;
 		default:
@@ -986,7 +1075,7 @@ void PrinterIntercept::sendUnknown46() {
 	cmdUnknown46.command = FIXUP3D_CMD_UNKNOWN46;
 	cmdUnknown46.commandBytes = 1;
 	cmdUnknown46.argumentsLength = 0;
-	cmdUnknown46.responseLength = 1;
+	cmdUnknown46.responseLength = 5;
 	addCustomCommand(cmdUnknown46);
 }
 
@@ -999,7 +1088,7 @@ void PrinterIntercept::sendUnknown53() {
 	addCustomCommand(cmdUnknown53);
 }
 
-void PrinterIntercept::sendUnknown4C32() {
+void PrinterIntercept::sendProgramCommitHead() {
 	FixUp3DCustomCommand	cmdUnknown4C32;
 	cmdUnknown4C32.command = FIXUP3D_CMD_UNKNOWN4C32;
 	cmdUnknown4C32.commandBytes = 2;
@@ -1017,7 +1106,7 @@ void PrinterIntercept::sendUnknown4C33() {
 	addCustomCommand(cmdUnknown4C33);
 }
 
-void PrinterIntercept::sendUnknown4C35() {
+void PrinterIntercept::sendProgramCommitLayers() {
 	FixUp3DCustomCommand	cmdUnknown4C35;
 	cmdUnknown4C35.command = FIXUP3D_CMD_UNKNOWN4C35;
 	cmdUnknown4C35.commandBytes = 2;
@@ -1160,6 +1249,78 @@ void PrinterIntercept::setUnknown8E(ULONG value) {
 	cmdSetUnknown8E.argumentsLength = 4;
 	cmdSetUnknown8E.responseLength = 1;
 	addCustomCommand(cmdSetUnknown8E);
+}
+
+void PrinterIntercept::writeMemory(std::queue<FixUp3DMemBlock>& memBlocks) {
+	FixUp3DCustomCommand	cmdWriteMem;
+	cmdWriteMem.responseLength = 0;
+	while (!memBlocks.empty()) {
+		if (memBlocks.size() > 2) {
+			cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_3;
+			cmdWriteMem.commandBytes = 2;
+			cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 3;
+			cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 3 );
+			memcpy(cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+		} else if (memBlocks.size() > 1) {
+			cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_2;
+			cmdWriteMem.commandBytes = 2;
+			cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 2;
+			cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 2 );
+			memcpy(cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+		} else {
+			cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_1;
+			cmdWriteMem.commandBytes = 2;
+			cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock);
+			cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) );
+			memcpy(cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memBlocks.pop();
+		}
+		addCustomCommand(cmdWriteMem);
+	}
+}
+
+void PrinterIntercept::writeMemory1(FixUp3DMemBlock& memBlock) {
+	FixUp3DCustomCommand	cmdWriteMem;
+	cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_1;
+	cmdWriteMem.commandBytes = 2;
+	cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock);
+	cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) );
+	memcpy(cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
+	cmdWriteMem.responseLength = 0;
+	addCustomCommand(cmdWriteMem);
+}
+
+void PrinterIntercept::writeMemory2(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& memBlock2) {
+	FixUp3DCustomCommand	cmdWriteMem;
+	cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_2;
+	cmdWriteMem.commandBytes = 2;
+	cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 2;
+	cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 2 );
+	memcpy(cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
+	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
+	cmdWriteMem.responseLength = 0;
+	addCustomCommand(cmdWriteMem);
+}
+
+void PrinterIntercept::writeMemory3(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& memBlock2, FixUp3DMemBlock& memBlock3) {
+	FixUp3DCustomCommand	cmdWriteMem;
+	cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_3;
+	cmdWriteMem.commandBytes = 2;
+	cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 3;
+	cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 3 );
+	memcpy(cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
+	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
+	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlock3, sizeof(FixUp3DMemBlock));
+	cmdWriteMem.responseLength = 0;
+	addCustomCommand(cmdWriteMem);
 }
 
 void PrinterIntercept::stopPrint() {

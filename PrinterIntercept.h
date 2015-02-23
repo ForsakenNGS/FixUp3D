@@ -128,10 +128,11 @@ namespace Core {
 #define FIXUP3D_MEM_CMD_MOVE_SHORT			0x00000004
 #define FIXUP3D_MEM_CMD_UNKNOWN5			0x00000005
 #define FIXUP3D_MEM_CMD_SET_PARAM			0x00000006
-#define FIXUP3D_MEM_CMD_MOTORS_OFF			0x00000016
 // Parameters sent using the "FIXUP3D_MEM_CMD_SET_PARAM" command
 #define FIXUP3D_MEM_PARAM_LAYER				0x0000000A
 #define FIXUP3D_MEM_PARAM_HEIGHT			0x0000000B
+#define FIXUP3D_MEM_PARAM_UNKNOWN11			0x00000011
+#define FIXUP3D_MEM_PARAM_MOTORS_OFF		0x00000016
 #define FIXUP3D_MEM_PARAM_NOZZLE1_TEMP		0x00000039
 #define FIXUP3D_MEM_PARAM_NOZZLE2_TEMP		0x0000003A
 #define FIXUP3D_MEM_PARAM_BED_TEMP			0x0000003B
@@ -161,14 +162,14 @@ union	FixUp3DMemBlockParams {
 		ULONG	lParam4;
 	} longs;
 	struct	FixUp3DMemBlockShortParams {
-		SHORT	wParam2;
 		SHORT	wParam1;
-		SHORT	wParam4;
+		SHORT	wParam2;
 		SHORT	wParam3;
-		SHORT	wParam6;
+		SHORT	wParam4;
 		SHORT	wParam5;
-		SHORT	wParam8;
+		SHORT	wParam6;
 		SHORT	wParam7;
+		SHORT	wParam8;
 	} shorts;
 };
 
@@ -216,6 +217,8 @@ private:
 	float					memSpeedZ;
 	float					memExtrudeSpeed;
 
+	BOOL	logUpCmdSend(USHORT command, PUCHAR buffer, ULONG bufferLength);
+	void	logUpCmdReply(USHORT command, PUCHAR buffer, ULONG lengthTransferred);
 	BOOL	sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle, FixUp3DCustomCommand &command);
 	BOOL	handleUpCmdSend(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG bufferLength);
 	void	handleUpCmdReply(USHORT command, USHORT arg1, USHORT arg2, ULONG argLong, PUCHAR buffer, ULONG lengthTransferred);
@@ -243,9 +246,9 @@ public:
 	void	sendProgramGo();
 	void	sendUnknown46();
 	void	sendUnknown53();
-	void	sendUnknown4C32();
+	void	sendProgramCommitHead();
 	void	sendUnknown4C33();
-	void	sendUnknown4C35();
+	void	sendProgramCommitLayers();
 	void	sendUnknown6C(USHORT param);
 	void	sendUnknown7330();
 	void	sendUnknown7331();
@@ -260,6 +263,10 @@ public:
 	void	setUnknown4C(ULONG value);
 	void	setUnknown4D(ULONG value);
 	void	setUnknown8E(ULONG value);
+	void	writeMemory(std::queue<FixUp3DMemBlock>& memBlocks);
+	void	writeMemory1(FixUp3DMemBlock& memBlock);
+	void	writeMemory2(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& memBlock2);
+	void	writeMemory3(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& memBlock2, FixUp3DMemBlock& memBlock3);
 	void	stopPrint();
 	void	printAgain();
 };
