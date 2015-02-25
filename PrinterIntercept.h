@@ -23,11 +23,11 @@ namespace Core {
 #define UPCMD_GetArgLo(Value)			(USHORT)( Value & 0xFF )
 #define UPCMD_GetArgHi(Value)			(USHORT)( (Value >> 8) & 0xFF )
 
-#define FIXUP3D_CMD_UNKNOWN46			0x46
+#define FIXUP3D_CMD_PROGRAM_CMDS_FREE			0x46
 #define FIXUP3D_CMD_UNKNOWN53			0x53
 #define FIXUP3D_CMD_PROGRAM_GO			0x58
 #define FIXUP3D_CMD_PROGRAM_NEW			0x63
-#define	FIXUP3D_CMD_UNKNOWN6C			0x6C
+#define	FIXUP3D_CMD_PROGRAM_WRITE			0x6C
 
 #define	FIXUP3D_CMD_ERASE_CONFIG		UPCMD(0x77,0x02)
 #define	FIXUP3D_CMD_ERASE_ROMPRG		UPCMD(0x77,0x01)
@@ -244,12 +244,12 @@ public:
 	void	sendGetUnknown8E();
 	void	sendProgramNew();
 	void	sendProgramGo();
-	void	sendUnknown46();
+	void	sendProgramCmdsFree();
 	void	sendUnknown53();
 	void	sendProgramCommitHead();
 	void	sendUnknown4C33();
 	void	sendProgramCommitLayers();
-	void	sendUnknown6C(USHORT param);
+	void	sendProgramWrite(USHORT param);
 	void	sendUnknown7330();
 	void	sendUnknown7331();
 	void	sendUnknown7332();

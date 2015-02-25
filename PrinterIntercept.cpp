@@ -1070,9 +1070,12 @@ void PrinterIntercept::sendProgramNew() {
 	addCustomCommand(cmdProgramNew);
 }
 
-void PrinterIntercept::sendUnknown46() {
+/**
+ * Gets the number of commands left in the currently writing program
+ */
+void PrinterIntercept::sendProgramCmdsFree() {
 	FixUp3DCustomCommand	cmdUnknown46;
-	cmdUnknown46.command = FIXUP3D_CMD_UNKNOWN46;
+	cmdUnknown46.command = FIXUP3D_CMD_PROGRAM_CMDS_FREE;
 	cmdUnknown46.commandBytes = 1;
 	cmdUnknown46.argumentsLength = 0;
 	cmdUnknown46.responseLength = 5;
@@ -1115,11 +1118,17 @@ void PrinterIntercept::sendProgramCommitLayers() {
 	addCustomCommand(cmdUnknown4C35);
 }
 
-void PrinterIntercept::sendUnknown6C(USHORT param) {
+/**
+ * Starts/stops writing a program to sdcard
+ * programId	index of the program to be written (only 9 seen so far)
+ * programMode	1 = Start writing / 0 = Stop writing
+ */
+void PrinterIntercept::sendProgramWrite(UCHAR programId, UCHAR programMode) {
 	FixUp3DCustomCommand	cmdUnknown6C;
-	cmdUnknown6C.command = FIXUP3D_CMD_UNKNOWN6C;
+	cmdUnknown6C.command = FIXUP3D_CMD_PROGRAM_WRITE;
 	cmdUnknown6C.commandBytes = 1;
-	memcpy(cmdUnknown6C.arguments, &param, 2);
+	memcpy(cmdUnknown6C.arguments, &programId, 1);
+	memcpy(cmdUnknown6C.arguments + 1, &programMode, 1);
 	cmdUnknown6C.argumentsLength = 2;
 	cmdUnknown6C.responseLength = 1;
 	addCustomCommand(cmdUnknown6C);
@@ -1358,7 +1367,7 @@ void PrinterIntercept::printAgain() {
 	sendGetPrinterStatus();
 	// Execute some program?
 	sendProgramNew();	// >63
-	sendUnknown6C(9);	// >6C0900
+	sendProgramWrite(9);	// >6C0900
 	sendProgramGo();	// >58
 	// Update status
 	sendGetConnected();

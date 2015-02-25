@@ -282,6 +282,9 @@ LRESULT PrinterSettings::handleWndMessage(HWND hWnd, UINT message, WPARAM wParam
 						layer1.unknown5(500);
 						layer1.jumpTo(-32.0f, 123.0f, 80.0f, 123.0f, -61.04f, 10000.0f, 0.0f, 10000.0f);
 						layer1.unknown5(1);
+						layer1.unknown5(500);
+						layer1.jumpTo(-53.0f, 123.0f, 100.0f, 123.0f, -60.04f, 10000.0f, 0.0f, 10000.0f);
+						layer1.unknown5(1);
 						layer1.setParam(FIXUP3D_MEM_PARAM_UNKNOWN11, 1);
 						layer1.setParam(FIXUP3D_MEM_PARAM_MOTORS_OFF, 0);
 						layer1.setParam(FIXUP3D_MEM_PARAM_TIME_REMAINING, 0);

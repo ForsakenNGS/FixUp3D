@@ -115,7 +115,7 @@ void UpProgramLayer::unknown5(unsigned int unknownParam) {
  */
 void UpProgramLayer::writeToPrinter() {
 	PrinterIntercept* 		intercept = PrinterIntercept::getInstance();
-	intercept->sendUnknown46();				// UNKNOWN_46			46
+	intercept->sendProgramCmdsFree();				// UNKNOWN_46			46
 	intercept->writeMemory(commandQueue);
 }
 
