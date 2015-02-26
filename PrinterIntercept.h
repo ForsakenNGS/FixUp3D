@@ -249,7 +249,7 @@ public:
 	void	sendProgramCommitHead();
 	void	sendUnknown4C33();
 	void	sendProgramCommitLayers();
-	void	sendProgramWrite(USHORT param);
+	void	sendProgramWrite(UCHAR programId, UCHAR programMode);
 	void	sendUnknown7330();
 	void	sendUnknown7331();
 	void	sendUnknown7332();

@@ -1366,9 +1366,9 @@ void PrinterIntercept::printAgain() {
 	sendGetConnected();
 	sendGetPrinterStatus();
 	// Execute some program?
-	sendProgramNew();	// >63
-	sendProgramWrite(9);	// >6C0900
-	sendProgramGo();	// >58
+	sendProgramNew();		// >63
+	sendProgramWrite(9, 0);	// >6C0900
+	sendProgramGo();		// >58
 	// Update status
 	sendGetConnected();
 	sendGetPrinterStatus();

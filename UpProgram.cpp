@@ -57,7 +57,7 @@ void UpProgram::writeToPrinter() {
 	intercept->sendProgramNew();			// PROGRAM_NEW				63
 	intercept->setUnknown0A(0);				// SET_UNKNOWN_0A			560A	00000000
 	intercept->setUnknown0B(0);				// SET_UNKNOWN_0B			560B	00000000
-	intercept->sendProgramWrite(0x0109);	// UNKNOWN_6C				6C		0901
+	intercept->sendProgramWrite(9, 1);		// UNKNOWN_6C				6C		0901
 	intercept->setPrinterStatus(0x13);		// SET_PRINTER_STATUS		5610	13000000
 
 	// Set params for layer 0
@@ -101,7 +101,7 @@ void UpProgram::writeToPrinter() {
 	// Get commands relevant? GET_PRINTER_STATUS, GET_LAYER, GET_UNKOWN0B, GET_NOZZLE1_TEMP, GET_NOZZLE2_TEMP, GET_BED_TEMP
 
 	intercept->sendProgramNew();			// PROGRAM_NEW				63
-	intercept->sendProgramWrite(0x0009);		// UNKNOWN_6C				6C		0900
+	intercept->sendProgramWrite(9, 0);		// UNKNOWN_6C				6C		0900
 	intercept->sendProgramGo();				// PROGRAM_GO				58
 }
 
