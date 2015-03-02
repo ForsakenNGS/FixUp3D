@@ -170,6 +170,7 @@ BOOL PrinterIntercept::sendCustomCommand(WINUSB_INTERFACE_HANDLE interfaceHandle
  */
 BOOL PrinterIntercept::logUpCmdSend(USHORT command, PUCHAR buffer, ULONG bufferLength) {
 	PrinterSettings*	settings = PrinterSettings::getInstance();
+    (void)settings; //prevent unused warning - it is used via the getinstance singleton
 	switch (command) {
 		case FIXUP3D_CMD_GET_PRINTERPARAM:
 		{
@@ -317,6 +318,7 @@ BOOL PrinterIntercept::logUpCmdSend(USHORT command, PUCHAR buffer, ULONG bufferL
 
 void PrinterIntercept::logUpCmdReply(USHORT command, PUCHAR buffer, ULONG lengthTransferred) {
 	PrinterSettings* settings = PrinterSettings::getInstance();
+    (void)settings; //prevent unused warning - it is used via the getinstance singleton
 	logRaw.get(LogLevel::DEBUG) << "< REPLY: ";
 	logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
 	logRaw.get(LogLevel::DEBUG) << "\n";
@@ -1271,18 +1273,18 @@ void PrinterIntercept::writeMemory(std::queue<FixUp3DMemBlock>& memBlocks) {
 			cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 3 );
 			memcpy(cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
 			memBlocks.pop();
-			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
 			memBlocks.pop();
-			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlocks.front(), sizeof(FixUp3DMemBlock));
 			memBlocks.pop();
 		} else if (memBlocks.size() > 1) {
 			cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_2;
 			cmdWriteMem.commandBytes = 2;
 			cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 2;
 			cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 2 );
-			memcpy(cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memcpy((uint8_t*)cmdWriteMem.argumentsPtr, &memBlocks.front(), sizeof(FixUp3DMemBlock));
 			memBlocks.pop();
-			memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
+			memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlocks.front(), sizeof(FixUp3DMemBlock));
 			memBlocks.pop();
 		} else {
 			cmdWriteMem.command = FIXUP3D_CMD_WRITE_MEM_1;
@@ -1313,8 +1315,8 @@ void PrinterIntercept::writeMemory2(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& 
 	cmdWriteMem.commandBytes = 2;
 	cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 2;
 	cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 2 );
-	memcpy(cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
-	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
+	memcpy((uint8_t*)cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
+	memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
 	cmdWriteMem.responseLength = 0;
 	addCustomCommand(cmdWriteMem);
 }
@@ -1325,9 +1327,9 @@ void PrinterIntercept::writeMemory3(FixUp3DMemBlock& memBlock, FixUp3DMemBlock& 
 	cmdWriteMem.commandBytes = 2;
 	cmdWriteMem.argumentsLength = sizeof(FixUp3DMemBlock) * 3;
 	cmdWriteMem.argumentsPtr = malloc( sizeof(FixUp3DMemBlock) * 3 );
-	memcpy(cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
-	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
-	memcpy(cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlock3, sizeof(FixUp3DMemBlock));
+	memcpy((uint8_t*)cmdWriteMem.argumentsPtr, &memBlock, sizeof(FixUp3DMemBlock));
+	memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock), &memBlock2, sizeof(FixUp3DMemBlock));
+	memcpy((uint8_t*)cmdWriteMem.argumentsPtr + sizeof(FixUp3DMemBlock) * 2, &memBlock3, sizeof(FixUp3DMemBlock));
 	cmdWriteMem.responseLength = 0;
 	addCustomCommand(cmdWriteMem);
 }
