@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define STEPS_X (854.0)
 #define STEPS_Y (854.0)
@@ -157,7 +158,11 @@ void _dat_cmd_SetParameter( int32_t param, int32_t value )
     break;
 
     case PARA_REPORT_HEIGHT:
-      printf( "Report Height: %.3f", *((float*)&value) );
+    {
+      float f;
+      memcpy( &f, &value, sizeof(f) );
+      printf( "Report Height: %.3f", f );
+    }
     break;
 
     case PARA_NOZZLE1_TEMP:
