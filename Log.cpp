@@ -8,6 +8,7 @@
 #include "Log.h"
 #include "logging/ConsoleTarget.h"
 #include <time.h>
+#include <stdio.h>
 
 #include <iostream>
 #include <iomanip>
