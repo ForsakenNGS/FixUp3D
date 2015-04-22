@@ -291,18 +291,17 @@ BOOL PrinterIntercept::logUpCmdSend(USHORT command, PUCHAR buffer, ULONG bufferL
 			logRaw.get(LogLevel::DEBUG) << "\n";
 		}
 		break;
-		case FIXUP3D_CMD_WRITE_MEM_1:
-		case FIXUP3D_CMD_WRITE_MEM_2:
-		case FIXUP3D_CMD_WRITE_MEM_3:
-		{
-			logRaw.get(LogLevel::DEBUG) << "> WRITE_MEM: ";
-			logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
-			logRaw.get(LogLevel::DEBUG) << "\n";
-			logRaw.get(LogLevel::DEBUG) << "  LENGTH: " << bufferLength << "\n";
-		}
-		break;
+
 		default:
-			if ((command & 0xFF) == 0x76) {
+			UCHAR cmdLo = UPCMD_GetArgLo(command);
+			if (FIXUP3D_CMD_WRITE_MEM_HEAD == cmdLo)
+			{
+				logRaw.get(LogLevel::DEBUG) << "> WRITE_MEM: ";
+				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
+				logRaw.get(LogLevel::DEBUG) << "\n";
+				logRaw.get(LogLevel::DEBUG) << "  LENGTH: " << bufferLength << "\n";
+			}
+			else if ((command & 0xFF) == 0x76) {
 				logRaw.get(LogLevel::DEBUG) << "> GET_" << std::hex << (command >> 8) << ": ";
 				logRaw.writeBinaryAsHex(LogLevel::DEBUG, buffer, bufferLength);
 				logRaw.get(LogLevel::DEBUG) << "\n";
@@ -538,41 +537,42 @@ BOOL PrinterIntercept::handleUpCmdSend(USHORT command, USHORT argLo, USHORT argH
 			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
-		case FIXUP3D_CMD_WRITE_MEM_1:
-		case FIXUP3D_CMD_WRITE_MEM_2:
-		case FIXUP3D_CMD_WRITE_MEM_3:
-		{
-			PUCHAR pBuf = buffer;
-			ULONG len = bufferLength;
-			for (;;) {
-				UCHAR numBlocks = *(pBuf + 1);
-				pBuf += 2; //JUMP OVER 2Fxx
-				len -= 2;
-				// Iterate memory blocks
-				for (UCHAR curBlock = 0; curBlock < numBlocks; curBlock++) {
-					handleUpMemBlock((FixUp3DMemBlock*) pBuf);
-					pBuf += sizeof(FixUp3DMemBlock);
-					len -= sizeof(FixUp3DMemBlock);
-				}
-				// Check for end of buffer
-				if (0 == len) {
-					break; //END OF BUFFER
-				}
-				// Check for padding bytes
-				if ( (0 != *pBuf) || (0 != *(pBuf+1)) ) {
-					break; //INVALID chaining terminator
-				}
-				pBuf += 2;	//JUMP OVER 0000
-				len -= 2;
-				// Check for next command
-				if (0x2F != *pBuf) {
-					break; //INVALID NEXT CMD
-				}
-			}
-			break;
-		}
+
 		default:
-			break;
+		{
+			if (FIXUP3D_CMD_WRITE_MEM_HEAD == *buffer)
+			{
+				PUCHAR pBuf = buffer;
+				ULONG len = bufferLength;
+				for (;;) {
+					UCHAR numBlocks = *(pBuf + 1);
+					pBuf += 2; //JUMP OVER 2Fxx
+					len -= 2;
+					// Iterate memory blocks
+					for (UCHAR curBlock = 0; curBlock < numBlocks; curBlock++) {
+						handleUpMemBlock((FixUp3DMemBlock*) pBuf);
+						pBuf += sizeof(FixUp3DMemBlock);
+						len -= sizeof(FixUp3DMemBlock);
+					}
+					// Check for end of buffer
+					if (0 == len) {
+						break; //END OF BUFFER
+					}
+					// Check for padding bytes
+					if ( (0 != *pBuf) || (0 != *(pBuf+1)) ) {
+						break; //INVALID chaining terminator
+					}
+					pBuf += 2;	//JUMP OVER 0000
+					len -= 2;
+					// Check for next command
+					if (0x2F != *pBuf) {
+						break; //INVALID NEXT CMD
+					}
+				}
+				break;
+			}
+		}
+		break;
 	}
 	return true;
 }
@@ -776,16 +776,6 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 			log.get(LogLevel::DEBUG) << "\n";
 			break;
 		}
-		case FIXUP3D_CMD_WRITE_MEM_1:
-		case FIXUP3D_CMD_WRITE_MEM_2:
-		case FIXUP3D_CMD_WRITE_MEM_3:
-		{
-			UCHAR numBlocks = UPCMD_GetArgHi(command);
-			log.get(LogLevel::DEBUG) << "[WriteMem" << std::dec << numBlocks << "] Result: ";
-			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
-			log.get(LogLevel::DEBUG) << "\n";
-			break;
-		}
 		case FIXUP3D_CMD_NONE:
 		{
 			// Unknown command
@@ -796,6 +786,15 @@ void PrinterIntercept::handleUpCmdReply(USHORT command, USHORT argLo, USHORT arg
 		}
 		default:
 		{
+			UCHAR cmdLo = UPCMD_GetArgLo(command);
+			if (FIXUP3D_CMD_WRITE_MEM_HEAD == cmdLo )
+			{
+				UCHAR numBlocks = UPCMD_GetArgHi(command);
+				log.get(LogLevel::DEBUG) << "[WriteMem" << std::dec << numBlocks << "] Result: ";
+				log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
+				log.get(LogLevel::DEBUG) << "\n";
+				break;
+			}
 			// Unknown command
 			log.get(LogLevel::DEBUG) << "[UnknownCmd 0x" << std::hex << command << "] Args: " << argLong << " Result: ";
 			log.writeBinaryAsHex(LogLevel::DEBUG, buffer, lengthTransferred);
