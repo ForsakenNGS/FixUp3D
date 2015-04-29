@@ -49,7 +49,7 @@ Known values and wild guesses:
 - "Hatch Space": Wild guess: A factor for the distance between the infill threads?
 - "Support Width":  Wild guess: The resulting width of a "line" when printing the support?
 - "Support Space": Wild guess: A factor for the distance between the support "walls"?
-- "Support Layer": ??? Always 3.0 for Up Mini
+- "Support Layer": How many layers of support are printed. Almost always 3.0 for Up Mini, changeable in original software.
 - "Scan Speed": This is the speed used for printing the outer hull of the object. It only affects the outer of the 2 outlines the printer draws.
 - "Hatch Speed": This seems to be the speed used for the inner hull and infill of the object. (To be verified)
 - "Support Speed": This is obviously the speed for printing the support :)
